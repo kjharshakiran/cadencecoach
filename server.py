@@ -240,6 +240,40 @@ async def get_state():
         master_plan=state.get("master_plan", {})
     )
 
+# --- Scheduling ---
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+async def scheduled_checkin():
+    """Triggers the monitoring agent to check in on the user."""
+    session_id = get_or_create_session_id()
+    logger.info(f"Executing scheduled check-in for session {session_id}")
+    
+    checkin_prompt = "SYSTEM TRIGGER: It is time for a scheduled check-in. Review the user's status and ask for a report if nothing has been logged recently."
+    
+    content = types.Content(role="user", parts=[types.Part(text=checkin_prompt)])
+    final_response_text = ""
+    
+    try:
+        async for event in runner.run_async(user_id=USER_ID, session_id=session_id, new_message=content):
+            if event.is_final_response() and event.content and event.content.parts:
+                final_response_text = event.content.parts[0].text.strip()
+        
+        log_agent_interaction(session_id, "SCHEDULED_CHECKIN", final_response_text)
+    except Exception as e:
+        logger.error(f"Error during scheduled check-in: {e}")
+
+scheduler = AsyncIOScheduler()
+
+@app.on_event("startup")
+async def start_scheduler():
+    # Schedule check-ins at 9 AM, 12 PM, 3 PM, and 9 PM
+    scheduler.add_job(scheduled_checkin, 'cron', hour=9, minute=0)
+    scheduler.add_job(scheduled_checkin, 'cron', hour=12, minute=0)
+    scheduler.add_job(scheduled_checkin, 'cron', hour=15, minute=0)
+    scheduler.add_job(scheduled_checkin, 'cron', hour=21, minute=0)
+    scheduler.start()
+    logger.info("Scheduler started with check-ins at 9AM, 12PM, 3PM, 9PM.")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
