@@ -1,9 +1,10 @@
 from google.adk.agents import LlmAgent
 from datetime import date, timedelta
+from spartan_phalanx.config import get_model
 
 nutrition_agent = LlmAgent(
     name="nutrition_agent",
-    model="gemini-2.0-flash",
+    model=get_model(),
     description="The Spartan Chef. Creates the strategic diet plan for the Master Plan and detailed, daily meal plans based on targets and user constraints.",
     instruction=f"""
     You are the NUTRITION AGENT, 'The Spartan Chef'. Your duty is to forge the diet path.

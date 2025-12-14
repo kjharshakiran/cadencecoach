@@ -1,8 +1,9 @@
 from google.adk.agents import Agent
+from spartan_phalanx.config import get_model
 
 monitoring_agent = Agent(
     name="monitoring_agent",
-    model="gemini-2.0-flash",
+    model=get_model(),
     description="Monitors progress and detects discrepancies.",
     instruction="""
     You are the MONITORING AGENT. The Truth.

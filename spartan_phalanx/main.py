@@ -2,12 +2,12 @@
 from google.adk.agents import Agent
 from spartan_phalanx.sub_agents.planner_agent import planner_agent
 from spartan_phalanx.sub_agents.monitoring_agent import monitoring_agent
-
+from spartan_phalanx.config import get_model
 
 
 THE_SPARTAN = Agent(
     name="THE_SPARTAN",
-    model="gemini-2.0-flash",
+    model=get_model(),
     instruction="""
     You are THE SPARTAN — Commander of the Phalanx.
     

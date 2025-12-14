@@ -2,10 +2,11 @@ from google.adk.agents import Agent
 from .nutrition_agent import nutrition_agent
 from .fitness_agent import fitness_agent
 from spartan_phalanx.tools.calculator_tools import calculate_bmr_tdee
+from spartan_phalanx.config import get_model
 
 planner_agent = Agent(
     name="planner_agent",
-    model="gemini-2.0-flash",
+    model=get_model(),
     description="The central coordinator. Creates the Master Plan, delegates detail generation to Nutrition and Fitness Agents, and generates the Daily Plan.",
     instruction="""
 

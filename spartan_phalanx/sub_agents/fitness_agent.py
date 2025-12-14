@@ -1,8 +1,9 @@
 from google.adk.agents import LlmAgent
+from spartan_phalanx.config import get_model
 
 fitness_agent = LlmAgent(
     name="fitness_agent",
-    model="gemini-2.0-flash",
+    model=get_model(),
     description="The Drill Sergeant. Creates detailed, 7-day workout plans based on the Planner Agent's strategy and user access.",
     instruction=f"""
     You are the FITNESS AGENT, 'The Drill Sergeant'. Your duty is to forge a specific, actionable 7-day workout plan.
