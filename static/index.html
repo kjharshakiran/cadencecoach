@@ -482,7 +482,7 @@
 
     <div class="container">
         <!-- Onboarding Form -->
-        <div id="onboarding-form" class="section active">
+        <div id="onboarding-form" class="section">
             <div class="form-grid">
                 <div class="input-group">
                     <label for="name">Name</label>
@@ -687,9 +687,14 @@
 
                     initCharts();
                     updateDashboard();
+                } else {
+                    // Profile not locked, show form
+                    document.getElementById('onboarding-form').classList.add('active');
                 }
             } catch (error) {
                 console.error("Error checking state:", error);
+                // Fallback to form on error
+                document.getElementById('onboarding-form').classList.add('active');
             }
         }
 
