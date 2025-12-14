@@ -19,11 +19,14 @@ The server runs on http://localhost:8000 with uvicorn.
 pip install -r requirements.txt
 ```
 
-### Google Cloud Authentication
+### Environment Variables
+Configure in `.env`:
 ```bash
-gcloud auth application-default login
+ANTHROPIC_API_KEY=your_key_here  # Required for Claude
+GOOGLE_API_KEY=your_key_here     # Required for Gemini
+MODEL_PROVIDER=anthropic          # Options: "anthropic" or "gemini"
+CLAUDE_MODEL=anthropic/claude-sonnet-4-20250514  # Optional, defaults to Sonnet
 ```
-Required for Vertex AI API access (Gemini 2.0 Flash model).
 
 ## Architecture
 
@@ -55,6 +58,7 @@ The session state stored in SQLite includes:
 
 ### Key Files
 - `server.py`: FastAPI application with endpoints `/api/chat`, `/api/onboard`, `/api/reset`, `/api/state`
+- `spartan_phalanx/config.py`: Model configuration using LiteLLM wrapper for provider-agnostic LLM selection
 - `spartan_phalanx/tools/calculator_tools.py`: BMR/TDEE calculation using Mifflin-St Jeor equation
 - `utils.py`: CLI utilities for terminal-based interaction (colored output, state display)
 
@@ -62,7 +66,8 @@ The session state stored in SQLite includes:
 APScheduler triggers automated check-ins at 9AM, 12PM, 3PM, and 9PM via the monitoring agent.
 
 ## Tech Stack
-- Backend: Python, FastAPI, Google ADK, Google GenAI SDK (Gemini 2.0 Flash)
+- Backend: Python, FastAPI, Google ADK
+- LLM: Claude (via LiteLLM) or Gemini - configurable via `MODEL_PROVIDER` env var
 - Frontend: Vanilla HTML/CSS/JS in `static/`
 - Database: SQLite via SQLAlchemy (`spartan_phalanx.db`)
 - Scheduling: APScheduler
