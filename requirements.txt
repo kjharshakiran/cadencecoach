@@ -9,3 +9,11 @@ uvicorn
 pydantic
 deprecated
 apscheduler
+authlib
+itsdangerous
+httpx
+python-multipart
+# Google Calendar API
+google-api-python-client
+google-auth
+google-auth-oauthlib

@@ -48,6 +48,66 @@
             line-height: 1.6;
         }
 
+        /* User Bar */
+        .user-bar {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 8px 16px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--card-bg-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            overflow: hidden;
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .logout-btn {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--accent-color);
+        }
+
         /* Header & Logo */
         header {
             margin-top: 32px;
@@ -590,12 +650,532 @@
             font-style: italic;
             font-size: 0.9rem;
         }
+
+        /* Urgency Banner */
+        .urgency-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 10px 20px;
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            z-index: 1001;
+            display: none;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .urgency-banner.green { background: linear-gradient(90deg, rgba(34, 197, 94, 0.9), rgba(22, 163, 74, 0.9)); color: white; }
+        .urgency-banner.yellow { background: linear-gradient(90deg, rgba(245, 158, 11, 0.9), rgba(217, 119, 6, 0.9)); color: black; }
+        .urgency-banner.orange { background: linear-gradient(90deg, rgba(249, 115, 22, 0.9), rgba(234, 88, 12, 0.9)); color: white; }
+        .urgency-banner.red { background: linear-gradient(90deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9)); color: white; animation: urgencyPulse 1s infinite; }
+
+        @keyframes slideDown {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
+        }
+
+        @keyframes urgencyPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        /* Notification Bell */
+        .notification-bell {
+            position: relative;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .notification-bell:hover {
+            background: var(--card-bg-light);
+        }
+
+        .notification-bell svg {
+            width: 20px;
+            height: 20px;
+            color: var(--text-muted);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: var(--accent-color);
+            color: white;
+            font-size: 0.6rem;
+            font-weight: bold;
+            min-width: 16px;
+            height: 16px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .notification-badge.hidden { display: none; }
+
+        .notification-panel {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 320px;
+            max-height: 400px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            overflow: hidden;
+            display: none;
+            z-index: 1002;
+        }
+
+        .notification-panel.active { display: block; }
+
+        .notification-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notification-header h4 {
+            margin: 0;
+            font-size: 0.8rem;
+            color: var(--text-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .notification-list {
+            max-height: 340px;
+            overflow-y: auto;
+        }
+
+        .notification-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .notification-item:hover {
+            background: var(--card-bg-light);
+        }
+
+        .notification-item.unread {
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .notification-time {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .notification-message {
+            font-size: 0.8rem;
+            color: var(--text-color);
+            line-height: 1.4;
+        }
+
+        /* Water Tracker */
+        .water-tracker {
+            background: linear-gradient(180deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .water-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .water-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: #3b82f6;
+            text-transform: uppercase;
+        }
+
+        .water-count {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .water-glasses {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .water-glass {
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            transition: all 0.2s;
+        }
+
+        .water-glass.filled {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        .water-btn {
+            width: 100%;
+            padding: 8px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+
+        .water-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        /* Step Tracker */
+        .step-tracker {
+            background: linear-gradient(180deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .step-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: #22c55e;
+            text-transform: uppercase;
+        }
+
+        .step-count {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .step-progress-bar {
+            background: rgba(34, 197, 94, 0.2);
+            height: 8px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+
+        .step-progress-fill {
+            background: linear-gradient(90deg, #22c55e, #16a34a);
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .step-input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .step-input {
+            flex: 1;
+            padding: 8px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 6px;
+            color: white;
+            font-size: 0.85rem;
+        }
+
+        .step-btn {
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        /* Integrations Page */
+        .integrations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .integration-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .integration-card:hover {
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(239, 68, 68, 0.15);
+        }
+
+        .integration-card.connected {
+            border-color: #22c55e;
+        }
+
+        .integration-card.connected::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #22c55e, #16a34a);
+        }
+
+        .integration-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .integration-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .integration-title {
+            flex: 1;
+        }
+
+        .integration-title h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: var(--text-color);
+        }
+
+        .integration-title span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .integration-status {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .integration-status.connected {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .integration-status.available {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+
+        .integration-status.coming-soon {
+            background: rgba(156, 163, 175, 0.2);
+            color: #9ca3af;
+        }
+
+        .integration-description {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .integration-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .integration-feature {
+            background: rgba(255,255,255,0.05);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .integration-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+
+        .integration-btn.connect {
+            background: linear-gradient(135deg, var(--accent-color), #b91c1c);
+            color: white;
+        }
+
+        .integration-btn.connect:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+        }
+
+        .integration-btn.connected {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .integration-btn.coming-soon {
+            background: rgba(156, 163, 175, 0.1);
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+
+        .integrations-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .integrations-header h2 {
+            margin: 0 0 8px 0;
+            font-size: 1.3rem;
+            color: var(--text-color);
+        }
+
+        .integrations-header p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .trust-verify-banner {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(185, 28, 28, 0.1));
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .trust-verify-banner .icon {
+            font-size: 40px;
+        }
+
+        .trust-verify-banner .content h4 {
+            margin: 0 0 4px 0;
+            color: var(--accent-color);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .trust-verify-banner .content p {
+            margin: 0;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .integration-category {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 20px 20px 10px 20px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
     </style>
 </head>
 
 <body>
 
+    <!-- Urgency Banner -->
+    <div id="urgency-banner" class="urgency-banner">
+        <span id="urgency-message">ON TRACK</span>
+    </div>
+
     <header>
+        <div class="user-bar" id="user-bar" style="display: none;">
+            <div class="user-info">
+                <span class="user-avatar" id="user-avatar">⚔️</span>
+                <span class="user-name" id="user-name">Warrior</span>
+            </div>
+            <!-- Notification Bell -->
+            <div class="notification-bell" id="notification-bell" onclick="toggleNotifications()">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+                <span id="notification-badge" class="notification-badge hidden">0</span>
+                <!-- Notification Panel -->
+                <div id="notification-panel" class="notification-panel">
+                    <div class="notification-header">
+                        <h4>Coach Orders</h4>
+                        <button onclick="clearNotifications()" style="background: none; border: none; color: var(--text-muted); font-size: 0.7rem; cursor: pointer;">Clear All</button>
+                    </div>
+                    <div id="notification-list" class="notification-list">
+                        <div style="padding: 20px; text-align: center; color: var(--text-muted);">No orders pending</div>
+                    </div>
+                </div>
+            </div>
+            <a href="/auth/logout" class="logout-btn">Logout</a>
+        </div>
         <div class="logo-container">
             <img src="/static/logo.png" alt="Spartan Coach Logo">
         </div>
@@ -606,6 +1186,7 @@
     <div class="nav-tabs" id="nav-tabs" style="display:none;">
         <button class="nav-tab active" onclick="switchTab('chat')">Command Center</button>
         <button class="nav-tab" onclick="switchTab('dashboard')">War Room</button>
+        <button class="nav-tab" onclick="switchTab('integrations')">Integrations</button>
     </div>
 
     <div class="container">
@@ -679,6 +1260,33 @@
 
                     <!-- Checklist View -->
                     <div id="checklist-view" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                        <!-- Water Tracker -->
+                        <div class="water-tracker" id="water-tracker">
+                            <div class="water-header">
+                                <span class="water-title">💧 Hydration</span>
+                                <span class="water-count"><span id="water-current">0</span>/8</span>
+                            </div>
+                            <div class="water-glasses" id="water-glasses">
+                                <!-- 8 glass indicators -->
+                            </div>
+                            <button class="water-btn" onclick="logWater()">+ Log Water</button>
+                        </div>
+
+                        <!-- Step Tracker -->
+                        <div class="step-tracker" id="step-tracker">
+                            <div class="step-header">
+                                <span class="step-title">👟 Steps</span>
+                                <span class="step-count"><span id="step-current">0</span>/10k</span>
+                            </div>
+                            <div class="step-progress-bar">
+                                <div class="step-progress-fill" id="step-progress" style="width: 0%"></div>
+                            </div>
+                            <div class="step-input-row">
+                                <input type="number" class="step-input" id="step-input" placeholder="Enter steps">
+                                <button class="step-btn" onclick="logSteps()">Log</button>
+                            </div>
+                        </div>
+
                         <!-- Metrics Input Section -->
                         <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 12px; margin-bottom: 12px; border: 1px solid var(--border-color);">
                             <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--accent-color); text-transform: uppercase; margin-bottom: 10px;">Daily Metrics</div>
@@ -831,6 +1439,335 @@
         <button onclick="closeCelebration()" style="background: linear-gradient(135deg, var(--accent-color), #b91c1c); color: white; border: none; padding: 15px 40px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 1rem; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;">Continue as Champion</button>
     </div>
 </div>
+
+        <!-- Integrations Page -->
+        <div id="integrations-interface" class="section">
+            <div class="integrations-header">
+                <h2>Integrations Hub</h2>
+                <p>Connect your fitness ecosystem. The more data sources you connect, the smarter your coach becomes at detecting progress and holding you accountable.</p>
+            </div>
+
+            <!-- Trust But Verify Banner -->
+            <div class="trust-verify-banner">
+                <div class="icon">🔍</div>
+                <div class="content">
+                    <h4>Trust But Verify Protocol</h4>
+                    <p>Your Spartan Coach cross-references your manual logs with connected data sources. This ensures accountability and detects discrepancies between what you report and what actually happened. No more fooling yourself - only real progress counts.</p>
+                </div>
+            </div>
+
+            <!-- Activity & Movement -->
+            <div class="integration-category">Activity & Movement Tracking</div>
+            <div class="integrations-grid">
+                <!-- WHOOP -->
+                <div class="integration-card">
+                    <div class="integration-header">
+                        <div class="integration-icon" style="background: rgba(0, 255, 136, 0.1);">⌚</div>
+                        <div class="integration-title">
+                            <h3>WHOOP</h3>
+                            <span>Strain & Recovery</span>
+                        </div>
+                        <span class="integration-status available">Available</span>
+                    </div>
+                    <p class="integration-description">
+                        Auto-sync strain scores, recovery metrics, sleep performance, and HRV data. Coach will verify your workout intensity claims against actual strain data.
+                    </p>
+                    <div class="integration-features">
+                        <span class="integration-feature">Strain Score</span>
+                        <span class="integration-feature">Recovery %</span>
+                        <span class="integration-feature">HRV</span>
+                        <span class="integration-feature">Sleep Quality</span>
+                    </div>
+                    <button class="integration-btn connect" onclick="connectIntegration('whoop')">Connect WHOOP</button>
+                </div>
+
+                <!-- Apple Health -->
+                <div class="integration-card">
+                    <div class="integration-header">
+                        <div class="integration-icon" style="background: rgba(255, 45, 85, 0.1);">❤️</div>
+                        <div class="integration-title">
+                            <h3>Apple Health</h3>
+                            <span>iOS Health Data</span>
+                        </div>
+                        <span class="integration-status coming-soon">Coming Soon</span>
+                    </div>
+                    <p class="integration-description">
+                        Sync steps, workouts, heart rate, and activity rings. Coach will verify your step counts and workout logs against Apple Health records.
+                    </p>
+                    <div class="integration-features">
+                        <span class="integration-feature">Steps</span>
+                        <span class="integration-feature">Workouts</span>
+                        <span class="integration-feature">Heart Rate</span>
+                        <span class="integration-feature">Activity Rings</span>
+                    </div>
+                    <button class="integration-btn coming-soon" disabled>Coming Soon</button>
+                </div>
+
+                <!-- Google Fit -->
+                <div class="integration-card">
+                    <div class="integration-header">
+                        <div class="integration-icon" style="background: rgba(66, 133, 244, 0.1);">🏃</div>
+                        <div class="integration-title">
+                            <h3>Google Fit</h3>
+                            <span>Android Health Data</span>
+                        </div>
+                        <span class="integration-status coming-soon">Coming Soon</span>
+                    </div>
+                    <p class="integration-description">
+                        Connect Google Fit for automatic step counting, workout tracking, and heart points. Verify your activity claims with real data.
+                    </p>
+                    <div class="integration-features">
+                        <span class="integration-feature">Steps</span>
+                        <span class="integration-feature">Heart Points</span>
+                        <span class="integration-feature">Workouts</span>
+                        <span class="integration-feature">Distance</span>
+                    </div>
+                    <button class="integration-btn coming-soon" disabled>Coming Soon</button>
+                </div>
+
+                <!-- Strava -->
+                <div class="integration-card">
+                    <div class="integration-header">
+                        <div class="integration-icon" style="background: rgba(252, 82, 0, 0.1);">🚴</div>
+                        <div class="integration-title">
+                            <h3>Strava</h3>
+                            <span>Athletic Activities</span>
+                        </div>
+                        <span class="integration-status coming-soon">Coming Soon</span>
+                    </div>
+                    <p class="integration-description">
+                        Import runs, rides, and workouts. Coach will track your athletic progress and verify exercise claims against GPS-tracked activities.
+                    </p>
+                    <div class="integration-features">
+                        <span class="integration-feature">Running</span>
+                        <span class="integration-feature">Cycling</span>
+                        <span class="integration-feature">GPS Tracking</span>
+                        <span class="integration-feature">Pace Data</span>
+                    </div>
+                    <button class="integration-btn coming-soon" disabled>Coming Soon</button>
+                </div>
+            </div>
+
+            <!-- Calendar & Schedule -->
+            <div class="integration-category">Calendar & Schedule</div>
+            <div class="integrations-grid">
+                <!-- Google Calendar -->
+                <div class="integration-card">
+                    <div class="integration-header">
+                        <div class="integration-icon" style="background: rgba(66, 133, 244, 0.1);">📅</div>
+                        <div class="integration-title">
+                            <h3>Google Calendar</h3>
+                            <span>Schedule Integration</span>
+                        </div>
+                        <span class="integration-status available">Available</span>
+                    </div>
+                    <p class="integration-description">
+                        Analyze your schedule for workout gaps. Coach finds free time slots and suggests micro-workouts that fit your busy day. No more "I didn't have time" excuses.
+                    </p>
+                    <div class="integration-features">
+                        <span class="integration-feature">Gap Analysis</span>
+                        <span class="integration-feature">Workout Scheduling</span>
+                        <span class="integration-feature">Time Blocking</span>
+                        <span class="integration-feature">Busy Detection</span>
+                    </div>
+                    <button class="integration-btn connect" onclick="connectIntegration('google_calendar')">Connect Calendar</button>
+                </div>
+
+                <!-- Outlook Calendar -->
+                <div class="integration-card">
+                    <div class="integration-header">
+                        <div class="integration-icon" style="background: rgba(0, 120, 212, 0.1);">📆</div>
+                        <div class="integration-title">
+                            <h3>Outlook Calendar</h3>
+                            <span>Microsoft 365</span>
+                        </div>
+                        <span class="integration-status coming-soon">Coming Soon</span>
+                    </div>
+                    <p class="integration-description">
+                        For Microsoft 365 users. Same gap analysis and workout scheduling as Google Calendar but synced with your Outlook schedule.
+                    </p>
+                    <div class="integration-features">
+                        <span class="integration-feature">Gap Analysis</span>
+                        <span class="integration-feature">Meeting Aware</span>
+                        <span class="integration-feature">Work Schedule</span>
+                    </div>
+                    <button class="integration-btn coming-soon" disabled>Coming Soon</button>
+                </div>
+            </div>
+
+            <!-- Nutrition & Diet -->
+            <div class="integration-category">Nutrition & Diet</div>
+            <div class="integrations-grid">
+                <!-- MyFitnessPal -->
+                <div class="integration-card">
+                    <div class="integration-header">
+                        <div class="integration-icon" style="background: rgba(0, 102, 238, 0.1);">🍎</div>
+                        <div class="integration-title">
+                            <h3>MyFitnessPal</h3>
+                            <span>Calorie Tracking</span>
+                        </div>
+                        <span class="integration-status coming-soon">Coming Soon</span>
+                    </div>
+                    <p class="integration-description">
+                        Sync your food diary and calorie intake. Coach will verify if your nutrition aligns with your weight goals and call out inconsistencies.
+                    </p>
+                    <div class="integration-features">
+                        <span class="integration-feature">Calories</span>
+                        <span class="integration-feature">Macros</span>
+                        <span class="integration-feature">Food Diary</span>
+                        <span class="integration-feature">Goal Tracking</span>
+                    </div>
+                    <button class="integration-btn coming-soon" disabled>Coming Soon</button>
+                </div>
+
+                <!-- Meal Recipe API -->
+                <div class="integration-card">
+                    <div class="integration-header">
+                        <div class="integration-icon" style="background: rgba(245, 158, 11, 0.1);">🍳</div>
+                        <div class="integration-title">
+                            <h3>Spoonacular</h3>
+                            <span>Recipe Recommendations</span>
+                        </div>
+                        <span class="integration-status available">Available</span>
+                    </div>
+                    <p class="integration-description">
+                        Get AI-powered meal recommendations based on your calorie targets, dietary restrictions, and available ingredients. Coach will suggest meals that fit your plan.
+                    </p>
+                    <div class="integration-features">
+                        <span class="integration-feature">Calorie-Based</span>
+                        <span class="integration-feature">Macro Targets</span>
+                        <span class="integration-feature">Diet Types</span>
+                        <span class="integration-feature">Ingredient Search</span>
+                    </div>
+                    <button class="integration-btn connect" onclick="connectIntegration('spoonacular')">Connect Spoonacular</button>
+                </div>
+
+                <!-- Cronometer -->
+                <div class="integration-card">
+                    <div class="integration-header">
+                        <div class="integration-icon" style="background: rgba(255, 149, 0, 0.1);">📊</div>
+                        <div class="integration-title">
+                            <h3>Cronometer</h3>
+                            <span>Detailed Nutrition</span>
+                        </div>
+                        <span class="integration-status coming-soon">Coming Soon</span>
+                    </div>
+                    <p class="integration-description">
+                        For detailed micronutrient tracking. Coach will analyze your vitamin and mineral intake alongside macros for comprehensive nutrition accountability.
+                    </p>
+                    <div class="integration-features">
+                        <span class="integration-feature">Micronutrients</span>
+                        <span class="integration-feature">Vitamins</span>
+                        <span class="integration-feature">Minerals</span>
+                        <span class="integration-feature">Biometrics</span>
+                    </div>
+                    <button class="integration-btn coming-soon" disabled>Coming Soon</button>
+                </div>
+            </div>
+
+            <!-- Body Composition -->
+            <div class="integration-category">Body Composition & Scale</div>
+            <div class="integrations-grid">
+                <!-- Withings -->
+                <div class="integration-card">
+                    <div class="integration-header">
+                        <div class="integration-icon" style="background: rgba(0, 191, 165, 0.1);">⚖️</div>
+                        <div class="integration-title">
+                            <h3>Withings</h3>
+                            <span>Smart Scale</span>
+                        </div>
+                        <span class="integration-status coming-soon">Coming Soon</span>
+                    </div>
+                    <p class="integration-description">
+                        Auto-sync weight, body fat %, muscle mass, and water weight. Coach will verify your weigh-in claims and detect if you're logging fake weights.
+                    </p>
+                    <div class="integration-features">
+                        <span class="integration-feature">Weight</span>
+                        <span class="integration-feature">Body Fat %</span>
+                        <span class="integration-feature">Muscle Mass</span>
+                        <span class="integration-feature">BMI</span>
+                    </div>
+                    <button class="integration-btn coming-soon" disabled>Coming Soon</button>
+                </div>
+
+                <!-- Renpho -->
+                <div class="integration-card">
+                    <div class="integration-header">
+                        <div class="integration-icon" style="background: rgba(147, 51, 234, 0.1);">📱</div>
+                        <div class="integration-title">
+                            <h3>Renpho</h3>
+                            <span>Smart Scale</span>
+                        </div>
+                        <span class="integration-status coming-soon">Coming Soon</span>
+                    </div>
+                    <p class="integration-description">
+                        Sync body composition data from your Renpho scale. Coach cross-references your logged weight with actual scale measurements.
+                    </p>
+                    <div class="integration-features">
+                        <span class="integration-feature">13 Body Metrics</span>
+                        <span class="integration-feature">Trend Analysis</span>
+                        <span class="integration-feature">Auto Sync</span>
+                    </div>
+                    <button class="integration-btn coming-soon" disabled>Coming Soon</button>
+                </div>
+            </div>
+
+            <!-- AI & Intelligence -->
+            <div class="integration-category">AI & Intelligence Plugins</div>
+            <div class="integrations-grid">
+                <!-- Claude MCP -->
+                <div class="integration-card connected">
+                    <div class="integration-header">
+                        <div class="integration-icon" style="background: rgba(204, 153, 102, 0.1);">🤖</div>
+                        <div class="integration-title">
+                            <h3>Claude AI</h3>
+                            <span>Core Intelligence</span>
+                        </div>
+                        <span class="integration-status connected">Connected</span>
+                    </div>
+                    <p class="integration-description">
+                        Your Spartan Coach's brain. Claude powers all conversations, plan generation, and intelligent coaching. Always connected, always learning.
+                    </p>
+                    <div class="integration-features">
+                        <span class="integration-feature">Conversation</span>
+                        <span class="integration-feature">Plan Generation</span>
+                        <span class="integration-feature">Image Analysis</span>
+                        <span class="integration-feature">Multi-Agent</span>
+                    </div>
+                    <button class="integration-btn connected">Connected</button>
+                </div>
+
+                <!-- Discrepancy Detector -->
+                <div class="integration-card">
+                    <div class="integration-header">
+                        <div class="integration-icon" style="background: rgba(239, 68, 68, 0.1);">🔍</div>
+                        <div class="integration-title">
+                            <h3>Discrepancy Detector</h3>
+                            <span>Trust Verification</span>
+                        </div>
+                        <span class="integration-status available">Available</span>
+                    </div>
+                    <p class="integration-description">
+                        AI-powered analysis that compares your manual logs against connected data sources. Flags inconsistencies like claiming 10k steps when WHOOP shows low strain.
+                    </p>
+                    <div class="integration-features">
+                        <span class="integration-feature">Log Analysis</span>
+                        <span class="integration-feature">Pattern Detection</span>
+                        <span class="integration-feature">Fraud Alert</span>
+                        <span class="integration-feature">Trend Verify</span>
+                    </div>
+                    <button class="integration-btn connect" onclick="connectIntegration('discrepancy_detector')">Enable Detector</button>
+                </div>
+            </div>
+
+            <!-- Info Footer -->
+            <div style="padding: 30px 20px; text-align: center; border-top: 1px solid var(--border-color); margin-top: 20px;">
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin: 0;">
+                    More integrations coming soon. Want a specific integration?<br>
+                    <a href="mailto:feedback@spartancoach.app" style="color: var(--accent-color);">Request an integration</a>
+                </p>
+            </div>
+        </div>
 
     <script>
         const API_URL = 'http://localhost:8000/api';
@@ -1155,11 +2092,28 @@
             if (tabName === 'chat') {
                 document.querySelector('.nav-tab:nth-child(1)').classList.add('active');
                 document.getElementById('chat-interface').classList.add('active');
-            } else {
+            } else if (tabName === 'dashboard') {
                 document.querySelector('.nav-tab:nth-child(2)').classList.add('active');
                 document.getElementById('dashboard-interface').classList.add('active');
                 updateDashboard();
+            } else if (tabName === 'integrations') {
+                document.querySelector('.nav-tab:nth-child(3)').classList.add('active');
+                document.getElementById('integrations-interface').classList.add('active');
             }
+        }
+
+        // --- Integrations ---
+        function connectIntegration(integrationId) {
+            // Placeholder for integration connection logic
+            const messages = {
+                'whoop': 'WHOOP integration coming soon! This will auto-sync your strain, recovery, and sleep data.',
+                'google_calendar': 'Google Calendar integration is ready! Connect via OAuth to enable schedule-aware coaching.',
+                'spoonacular': 'Spoonacular integration coming soon! Get meal recommendations based on your calorie targets.',
+                'discrepancy_detector': 'Discrepancy Detector enabled! Your coach will now cross-reference your logs with connected data sources.'
+            };
+
+            alert(messages[integrationId] || 'Integration setup coming soon!');
+            // TODO: Implement actual OAuth flow for each integration
         }
 
         // --- Core Logic ---
@@ -1364,11 +2318,7 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    // Clear inputs after save
-                    document.getElementById('metric-weight').value = '';
-                    document.getElementById('metric-sleep').value = '';
-                    document.getElementById('metric-recovery').value = '';
-
+                    // Keep the values in the inputs (don't clear them)
                     // Show confirmation
                     addMessage("THE SPARTAN", data.message || "Metrics logged, warrior!");
 
@@ -1381,6 +2331,9 @@
                         });
                         loadDailyGoals();
                     }
+
+                    // Reload metrics to ensure consistency
+                    loadTodayMetrics();
                 }
             } catch (error) {
                 console.error("Error saving metrics:", error);
@@ -1605,7 +2558,248 @@
         }
 
         // Check state on load
+        // Load current user info
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/api/auth/me', { credentials: 'include' });
+                if (response.ok) {
+                    const user = await response.json();
+                    const userBar = document.getElementById('user-bar');
+                    const userAvatar = document.getElementById('user-avatar');
+                    const userName = document.getElementById('user-name');
+
+                    userName.textContent = user.name || user.username;
+
+                    // Show Google profile picture if available
+                    if (user.picture) {
+                        userAvatar.innerHTML = `<img src="${user.picture}" alt="${user.name}">`;
+                    } else {
+                        userAvatar.textContent = '⚔️';
+                    }
+
+                    userBar.style.display = 'flex';
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // WATER TRACKING
+        // ═══════════════════════════════════════════════════════════════
+
+        function renderWaterGlasses(filled) {
+            const container = document.getElementById('water-glasses');
+            container.innerHTML = '';
+            for (let i = 0; i < 8; i++) {
+                const glass = document.createElement('div');
+                glass.className = `water-glass ${i < filled ? 'filled' : ''}`;
+                glass.textContent = i < filled ? '💧' : '';
+                container.appendChild(glass);
+            }
+        }
+
+        async function loadWaterStatus() {
+            try {
+                const response = await fetch(`${API_URL}/water/status`);
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('water-current').textContent = data.glasses;
+                    renderWaterGlasses(data.glasses);
+                }
+            } catch (error) {
+                console.error('Error loading water status:', error);
+            }
+        }
+
+        async function logWater() {
+            try {
+                const response = await fetch(`${API_URL}/water/log`, { method: 'POST' });
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('water-current').textContent = data.glasses;
+                    renderWaterGlasses(data.glasses);
+
+                    // Show feedback
+                    addMessage("THE SPARTAN", data.message);
+
+                    // Update goals list
+                    loadDailyGoals();
+                }
+            } catch (error) {
+                console.error('Error logging water:', error);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // STEP TRACKING
+        // ═══════════════════════════════════════════════════════════════
+
+        async function loadStepStatus() {
+            try {
+                const response = await fetch(`${API_URL}/steps/status`);
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('step-current').textContent = data.steps.toLocaleString();
+                    document.getElementById('step-progress').style.width = `${data.progress_percent}%`;
+
+                    // Pre-fill input if we have previous steps
+                    if (data.steps > 0) {
+                        document.getElementById('step-input').value = data.steps;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading step status:', error);
+            }
+        }
+
+        async function logSteps() {
+            const input = document.getElementById('step-input');
+            const steps = parseInt(input.value);
+
+            if (!steps || steps < 0) {
+                alert('Enter a valid step count!');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/steps/log`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ steps })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('step-current').textContent = data.steps.toLocaleString();
+                    document.getElementById('step-progress').style.width = `${data.progress_percent}%`;
+
+                    // Show feedback
+                    addMessage("THE SPARTAN", data.message);
+
+                    // Update goals list
+                    loadDailyGoals();
+                }
+            } catch (error) {
+                console.error('Error logging steps:', error);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // NOTIFICATIONS
+        // ═══════════════════════════════════════════════════════════════
+
+        function toggleNotifications() {
+            const panel = document.getElementById('notification-panel');
+            panel.classList.toggle('active');
+
+            // Stop propagation to prevent closing immediately
+            event.stopPropagation();
+        }
+
+        // Close notification panel when clicking outside
+        document.addEventListener('click', (e) => {
+            const bell = document.getElementById('notification-bell');
+            const panel = document.getElementById('notification-panel');
+            if (bell && !bell.contains(e.target)) {
+                panel.classList.remove('active');
+            }
+        });
+
+        async function loadNotifications() {
+            try {
+                const response = await fetch(`${API_URL}/notifications`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const badge = document.getElementById('notification-badge');
+                    const list = document.getElementById('notification-list');
+
+                    // Update badge
+                    const unreadCount = data.reminders.filter(r => !r.read).length;
+                    badge.textContent = unreadCount;
+                    badge.classList.toggle('hidden', unreadCount === 0);
+
+                    // Update list
+                    if (data.reminders.length === 0) {
+                        list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">No orders pending</div>';
+                    } else {
+                        list.innerHTML = data.reminders.slice().reverse().map(r => `
+                            <div class="notification-item ${r.read ? '' : 'unread'}">
+                                <div class="notification-time">${new Date(r.time).toLocaleTimeString()}</div>
+                                <div class="notification-message">${r.message.substring(0, 150)}${r.message.length > 150 ? '...' : ''}</div>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+            }
+        }
+
+        async function clearNotifications() {
+            try {
+                await fetch(`${API_URL}/notifications/clear`, { method: 'POST' });
+                loadNotifications();
+            } catch (error) {
+                console.error('Error clearing notifications:', error);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // URGENCY BANNER
+        // ═══════════════════════════════════════════════════════════════
+
+        async function updateUrgencyBanner() {
+            try {
+                const response = await fetch(`${API_URL}/urgency`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const banner = document.getElementById('urgency-banner');
+                    const message = document.getElementById('urgency-message');
+
+                    // Only show banner if urgency level >= 1 OR if all goals complete
+                    if (data.level >= 1) {
+                        banner.className = 'urgency-banner ' + data.label.toLowerCase();
+                        message.textContent = `⚠️ URGENCY: ${data.label} - ${data.message}${data.factors.length > 0 ? ' | ' + data.factors.join(' | ') : ''}`;
+                        banner.style.display = 'block';
+                    } else if (data.completion_percent === 100) {
+                        banner.className = 'urgency-banner green';
+                        message.textContent = '🏆 ALL GOALS COMPLETE! Outstanding work, Warrior!';
+                        banner.style.display = 'block';
+                    } else {
+                        banner.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating urgency banner:', error);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // POLLING FOR UPDATES
+        // ═══════════════════════════════════════════════════════════════
+
+        // Poll for updates every 30 seconds
+        setInterval(async () => {
+            await loadNotifications();
+            await updateUrgencyBanner();
+        }, 30000);
+
+        // Initialize all tracking widgets
+        function initTrackers() {
+            renderWaterGlasses(0);
+            loadWaterStatus();
+            loadStepStatus();
+            loadNotifications();
+            updateUrgencyBanner();
+        }
+
+        // Initialize
+        loadUserInfo();
         checkState();
+
+        // Initialize trackers after a short delay to ensure DOM is ready
+        setTimeout(initTrackers, 500);
 
     </script>
 </body>
