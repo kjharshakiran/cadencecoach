@@ -1,0 +1,51 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv
+venv
+ENV
+env
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Testing
+.pytest_cache
+.coverage
+htmlcov
+
+# Local development
+.env.local
+*.log
+/tmp
+
+# Database (will be created fresh or use Cloud SQL)
+*.db
+sessions.db
+
+# Documentation
+*.md
+!README.md
+
+# macOS
+.DS_Store
+
+# Misc
+*.bak
+*.tmp
+
+# Google Cloud SDK (local install)
+google-cloud-sdk
+
+# Plan files
+.claude

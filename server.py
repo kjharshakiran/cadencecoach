@@ -379,6 +379,21 @@ session_service = DatabaseSessionService(db_url=db_url)
 APP_NAME = "SpartanCoach"
 USER_ID = "Alex"  # Default user for this demo
 
+# Default daily goals template (used for new sessions and before plan acceptance)
+DEFAULT_GOALS_TEMPLATE = [
+    {"id": "weight", "name": "Weight check-in", "category": "health"},
+    {"id": "ice_wash", "name": "Ice face wash", "category": "health"},
+    {"id": "medicine", "name": "Take medicine", "category": "health"},
+    {"id": "abc_drink", "name": "ABC drink", "category": "nutrition"},
+    {"id": "vitamins", "name": "Take vitamins", "category": "nutrition"},
+    {"id": "nuts", "name": "Eat nuts", "category": "nutrition"},
+    {"id": "water", "name": "Water (8 glasses)", "category": "hydration", "target": 8, "current": 0},
+    {"id": "workout", "name": "Completed workout", "category": "exercise"},
+    {"id": "diet", "name": "Completed diet plan", "category": "nutrition"},
+    {"id": "standing", "name": "Standing breaks", "category": "movement"},
+    {"id": "walking", "name": "10k Steps", "category": "movement", "target": 10000, "current": 0}
+]
+
 # Initialize Runner
 runner = Runner(
     agent=THE_SPARTAN,
@@ -392,6 +407,7 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     response: str
+    plan_accepted: bool = False
 
 class OnboardRequest(BaseModel):
     name: str
@@ -445,19 +461,6 @@ def get_or_create_session_id():
         return existing_sessions.sessions[0].id
     
     # Initial state with enhanced schema for proactive coaching
-    default_goals_template = [
-        {"id": "weight", "name": "Weight check-in", "category": "health"},
-        {"id": "ice_wash", "name": "Ice face wash", "category": "health"},
-        {"id": "medicine", "name": "Take medicine", "category": "health"},
-        {"id": "abc_drink", "name": "ABC drink", "category": "nutrition"},
-        {"id": "vitamins", "name": "Take vitamins", "category": "nutrition"},
-        {"id": "nuts", "name": "Eat nuts", "category": "nutrition"},
-        {"id": "water", "name": "Water (8 glasses)", "category": "hydration", "target": 8, "current": 0},
-        {"id": "workout", "name": "Completed workout", "category": "exercise"},
-        {"id": "diet", "name": "Completed diet plan", "category": "nutrition"},
-        {"id": "standing", "name": "Standing breaks", "category": "movement"},
-        {"id": "walking", "name": "10k Steps", "category": "movement", "target": 10000, "current": 0}
-    ]
     initial_state = {
         "user_name": "",
         "warrior_profile": {},
@@ -466,7 +469,7 @@ def get_or_create_session_id():
         "plan_accepted": False,
         "daily_plan": {},
         "daily_goals": [],
-        "daily_goals_template": default_goals_template,
+        "daily_goals_template": DEFAULT_GOALS_TEMPLATE,
         "daily_logs": [],
         "daily_metrics": {},
 
@@ -547,7 +550,12 @@ async def chat(request: ChatRequest):
                 force_update_state(session_id, state)
                 logger.info(f"Daily plan saved from chat for {today}")
 
-        return ChatResponse(response=final_response_text)
+        # Get plan_accepted status to return to frontend
+        session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+        state = session.state
+        plan_accepted = state.get("plan_accepted", False)
+
+        return ChatResponse(response=final_response_text, plan_accepted=plan_accepted)
     except Exception as e:
         logger.error(f"Error in chat endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -730,6 +738,15 @@ async def get_daily_goals():
 
     goals = state.get("daily_goals", [])
 
+    # If no goals yet, use the template to show placeholder goals
+    if not goals:
+        template = state.get("daily_goals_template", DEFAULT_GOALS_TEMPLATE)
+        today = datetime.now().strftime("%Y-%m-%d")
+        goals = [
+            {**goal, "completed": False, "date": today}
+            for goal in template
+        ]
+
     # Migrate old goal IDs to new ones (pushups/pullups -> workout/diet)
     goal_ids = [g.get("id") for g in goals]
     needs_migration = "pushups" in goal_ids or "pullups" in goal_ids
@@ -774,6 +791,16 @@ async def check_goal(request: GoalCheckRequest):
     state = session.state
 
     goals = state.get("daily_goals", [])
+
+    # If no goals yet, initialize from template
+    if not goals:
+        template = state.get("daily_goals_template", DEFAULT_GOALS_TEMPLATE)
+        today = datetime.now().strftime("%Y-%m-%d")
+        goals = [
+            {**goal, "completed": False, "date": today}
+            for goal in template
+        ]
+
     goal_found = False
 
     for goal in goals:
@@ -803,6 +830,16 @@ async def uncheck_goal(request: GoalCheckRequest):
     state = session.state
 
     goals = state.get("daily_goals", [])
+
+    # If no goals yet, initialize from template
+    if not goals:
+        template = state.get("daily_goals_template", DEFAULT_GOALS_TEMPLATE)
+        today = datetime.now().strftime("%Y-%m-%d")
+        goals = [
+            {**goal, "completed": False, "date": today}
+            for goal in template
+        ]
+
     for goal in goals:
         if goal["id"] == request.goal_id:
             goal["completed"] = False
@@ -2021,4 +2058,16 @@ async def start_scheduler():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+    # Get port from environment variable (Cloud Run sets PORT)
+    port = int(os.environ.get("PORT", 8000))
+    environment = os.environ.get("ENVIRONMENT", "development")
+
+    logger.info(f"Starting Spartan Coach in {environment} mode on port {port}")
+
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=port,
+        log_level="info" if environment == "production" else "debug"
+    )

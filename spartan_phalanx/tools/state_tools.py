@@ -4,7 +4,7 @@ from typing import Dict, Any
 
 def save_master_plan(plan: Dict[str, Any], **kwargs):
     """Saves the Master Plan to the user's session.
-    
+
     Args:
         plan: The comprehensive Master Plan dictionary containing workout strategy, nutrition targets, and timeline.
     """
@@ -14,6 +14,35 @@ def save_master_plan(plan: Dict[str, Any], **kwargs):
     context.state["master_plan"] = plan
     context.state["plan_locked"] = True
     return "Master Plan saved and locked."
+
+def accept_plan(**kwargs):
+    """Accepts the Master Plan and transitions to daily execution phase.
+
+    Call this tool when the user confirms they want to accept and start their Master Plan.
+    This sets plan_accepted to True and initializes daily goals tracking.
+    """
+    context = kwargs.get("context")
+    if not context:
+        return "Error: Context not available."
+
+    if not context.state.get("master_plan"):
+        return "Error: No master plan exists to accept."
+
+    context.state["plan_accepted"] = True
+    context.state["master_plan"]["status"] = "accepted"
+
+    # Initialize daily goals from template if not already set
+    from datetime import datetime
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    template = context.state.get("daily_goals_template", [])
+    if not context.state.get("daily_goals") or len(context.state.get("daily_goals", [])) == 0:
+        context.state["daily_goals"] = [
+            {**goal, "completed": False, "date": today}
+            for goal in template
+        ]
+
+    return "PLAN ACCEPTED! Your transformation begins NOW. Daily goals have been initialized. The warrior's journey starts today!"
 
 def save_profile(name: str, age: int, height: float, weight: float, goal: str, target_date: str, **kwargs):
     """Save the user's onboarding profile to the session and lock it.
@@ -79,6 +108,17 @@ save_profile_declaration = types.FunctionDeclaration(
     ),
 )
 
+accept_plan_declaration = types.FunctionDeclaration(
+    name="accept_plan",
+    description="Accepts the Master Plan and transitions to daily execution phase. Call this tool when the user confirms they want to accept and start their Master Plan (e.g., user says 'accept', 'yes', 'let's do it', 'I'm ready'). This sets plan_accepted to True and initializes daily goals tracking.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={},
+        required=[],
+    ),
+)
+
 # Create tools with manual declarations
 save_master_plan_tool = types.Tool(function_declarations=[save_master_plan_declaration])
 save_profile_tool = types.Tool(function_declarations=[save_profile_declaration])
+accept_plan_tool = types.Tool(function_declarations=[accept_plan_declaration])

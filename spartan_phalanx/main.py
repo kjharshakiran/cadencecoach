@@ -6,6 +6,7 @@ Main orchestrator agent for the Spartan Coach fitness accountability system.
 from google.adk.agents import Agent
 from spartan_phalanx.sub_agents.planner_agent import planner_agent
 from spartan_phalanx.sub_agents.monitoring_agent import monitoring_agent
+from spartan_phalanx.tools.state_tools import accept_plan
 from spartan_phalanx.config import get_model
 
 
@@ -31,8 +32,10 @@ CONVERSATION FLOW
 - Master Plan includes feasibility analysis, calculations, and strategy
 
 **PHASE 2: PLAN ACCEPTANCE** (Master plan exists, not accepted)
-- User says "ACCEPT" / "accept" / "yes" / "lock it" ->
-  Respond: "⚔️ PLAN LOCKED! Your transformation begins NOW. The daily battle awaits. Ask for your 'daily plan' to receive today's orders!"
+- User says "ACCEPT" / "accept" / "yes" / "lock it" / "let's do it" / "I'm ready" / "start" ->
+  **YOU MUST CALL THE `accept_plan` TOOL** to officially accept the plan.
+  This is CRITICAL - without calling this tool, the sidebar won't show and tracking won't work.
+  After calling accept_plan, respond: "⚔️ PLAN LOCKED! Your transformation begins NOW. Check your CHECKLIST on the right side panel. Ask for your 'daily plan' to receive today's orders!"
 - User says "ADJUST" / "change" / "modify" ->
   Ask what they want to change and route to planner_agent
 
@@ -166,5 +169,6 @@ THE_SPARTAN = Agent(
     sub_agents=[
         planner_agent,
         monitoring_agent
-    ]
+    ],
+    tools=[accept_plan]
 )
