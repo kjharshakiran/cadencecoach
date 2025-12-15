@@ -1094,4 +1094,4 @@ Server runs at: `http://localhost:8000`
 
 ---
 
-*Last updated: December 2024*
+*Last updated: December 2025*
