@@ -103,96 +103,232 @@ LOGIN_PAGE_HTML = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spartan Coach - Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-color: #09090b;
+            --accent-color: #ef4444;
+            --accent-hover: #dc2626;
+            --accent-glow: rgba(239, 68, 68, 0.3);
+            --text-color: #fafafa;
+            --text-muted: #a1a1aa;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #09090b 0%, #18181b 100%);
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            background-image:
+                radial-gradient(ellipse at 50% -20%, rgba(239, 68, 68, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(59, 130, 246, 0.04) 0%, transparent 40%);
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: #fafafa;
+            color: var(--text-color);
+            position: relative;
+            overflow: hidden;
+        }
+        /* Geometric grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                linear-gradient(rgba(239, 68, 68, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(239, 68, 68, 0.03) 1px, transparent 1px),
+                linear-gradient(rgba(239, 68, 68, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(239, 68, 68, 0.02) 1px, transparent 1px);
+            background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.5;
+        }
+        /* Animated gradient orbs */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(239, 68, 68, 0.08) 0%, transparent 25%),
+                radial-gradient(circle at 80% 20%, rgba(239, 68, 68, 0.06) 0%, transparent 25%),
+                radial-gradient(circle at 40% 40%, rgba(220, 38, 38, 0.04) 0%, transparent 30%);
+            animation: float 20s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(2%, 2%) rotate(1deg); }
+            50% { transform: translate(0, 4%) rotate(0deg); }
+            75% { transform: translate(-2%, 2%) rotate(-1deg); }
         }
         .login-container {
-            background: rgba(24, 24, 27, 0.95);
-            border: 1px solid rgba(63, 63, 70, 0.5);
-            border-radius: 16px;
+            position: relative;
+            z-index: 1;
+            background: linear-gradient(135deg, rgba(24, 24, 27, 0.9) 0%, rgba(9, 9, 11, 0.95) 100%);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 24px;
             padding: 48px;
             width: 100%;
-            max-width: 420px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            max-width: 440px;
+            box-shadow:
+                0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+        }
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.5), transparent);
         }
         .logo {
             text-align: center;
             margin-bottom: 32px;
         }
         .logo-icon {
-            font-size: 64px;
-            margin-bottom: 16px;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            background: linear-gradient(180deg, rgba(24,24,27,0.95) 0%, rgba(9,9,11,0.98) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            box-shadow:
+                0 0 60px var(--accent-glow),
+                0 0 100px rgba(239, 68, 68, 0.15),
+                0 0 0 1px rgba(239, 68, 68, 0.3);
+            animation: pulse-glow 3s ease-in-out infinite;
+            position: relative;
+        }
+        .logo-icon::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(135deg, var(--accent-color), transparent, var(--accent-color));
+            border-radius: 50%;
+            z-index: -1;
+            animation: rotate 4s linear infinite;
+            opacity: 0.5;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 60px var(--accent-glow), 0 0 100px rgba(239, 68, 68, 0.15), 0 0 0 1px rgba(239, 68, 68, 0.3); }
+            50% { box-shadow: 0 0 80px var(--accent-glow), 0 0 120px rgba(239, 68, 68, 0.2), 0 0 0 2px rgba(239, 68, 68, 0.4); }
+        }
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
         .logo h1 {
-            font-size: 28px;
+            font-size: 1.8rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, #fff 0%, #ef4444 50%, #fff 100%);
+            background-size: 200% auto;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shine 3s linear infinite;
+            text-shadow: 0 0 40px rgba(239, 68, 68, 0.3);
+        }
+        @keyframes shine {
+            to { background-position: 200% center; }
         }
         .logo p {
-            color: #a1a1aa;
-            margin-top: 8px;
+            color: var(--text-muted);
+            margin-top: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
         .error-message {
             background: rgba(239, 68, 68, 0.1);
             border: 1px solid rgba(239, 68, 68, 0.3);
             color: #ef4444;
             padding: 12px 16px;
-            border-radius: 8px;
+            border-radius: 12px;
             margin-bottom: 24px;
             text-align: center;
+            font-size: 14px;
         }
         .form-group {
             margin-bottom: 20px;
         }
         label {
             display: block;
-            color: #a1a1aa;
-            font-size: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
             margin-bottom: 8px;
         }
         input[type="text"], input[type="password"] {
             width: 100%;
             padding: 14px 16px;
-            background: rgba(39, 39, 42, 0.5);
+            background: rgba(0, 0, 0, 0.5);
             border: 1px solid rgba(63, 63, 70, 0.5);
-            border-radius: 8px;
-            color: #fafafa;
+            border-radius: 12px;
+            color: var(--text-color);
+            font-family: 'Outfit', sans-serif;
             font-size: 16px;
-            transition: all 0.2s;
+            transition: all 0.3s ease;
         }
         input:focus {
             outline: none;
-            border-color: #ef4444;
-            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px var(--accent-glow), 0 0 20px rgba(239, 68, 68, 0.1);
+            background: rgba(0, 0, 0, 0.7);
+        }
+        input:hover {
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+        input::placeholder {
+            color: #52525b;
         }
         .btn {
             width: 100%;
-            padding: 14px 24px;
+            padding: 16px 24px;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
+            border-radius: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s ease;
             margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
         }
         .btn-primary {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            background: linear-gradient(135deg, var(--accent-color) 0%, #dc2626 100%);
             color: white;
+            box-shadow: 0 4px 20px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        .btn-primary:hover::before {
+            left: 100%;
         }
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3);
+            box-shadow: 0 8px 30px var(--accent-glow);
         }
         .btn-google {
             background: white;
@@ -201,9 +337,13 @@ LOGIN_PAGE_HTML = """
             align-items: center;
             justify-content: center;
             gap: 12px;
+            font-family: 'Outfit', sans-serif;
+            letter-spacing: 0;
+            text-transform: none;
         }
         .btn-google:hover {
             background: #f5f5f5;
+            transform: translateY(-2px);
         }
         .btn-google svg {
             width: 20px;
@@ -213,23 +353,61 @@ LOGIN_PAGE_HTML = """
             display: flex;
             align-items: center;
             margin: 24px 0;
-            color: #71717a;
+            color: #52525b;
         }
         .divider::before, .divider::after {
             content: '';
             flex: 1;
             height: 1px;
-            background: rgba(63, 63, 70, 0.5);
+            background: linear-gradient(90deg, transparent, rgba(63, 63, 70, 0.5), transparent);
         }
         .divider span {
             padding: 0 16px;
-            font-size: 14px;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
         }
         .footer {
             text-align: center;
             margin-top: 24px;
-            color: #71717a;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .footer p {
+            color: #52525b;
             font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 1px;
+        }
+        .feature-badges {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 16px;
+        }
+        .feature-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-muted);
+            font-size: 11px;
+            opacity: 0.7;
+        }
+        .feature-badge span {
+            font-size: 14px;
+        }
+        @media (max-width: 480px) {
+            .login-container {
+                margin: 20px;
+                padding: 32px 24px;
+            }
+            .logo h1 {
+                font-size: 1.4rem;
+                letter-spacing: 4px;
+            }
+            .feature-badges {
+                flex-direction: column;
+                gap: 8px;
+            }
         }
     </style>
 </head>
@@ -238,7 +416,7 @@ LOGIN_PAGE_HTML = """
         <div class="logo">
             <div class="logo-icon">⚔️</div>
             <h1>SPARTAN COACH</h1>
-            <p>Your AI Fitness Commander</p>
+            <p>AI-Powered Transformation Coach</p>
         </div>
 
         __ERROR_HTML__
@@ -259,6 +437,11 @@ LOGIN_PAGE_HTML = """
 
         <div class="footer">
             <p>Prepare for transformation. No excuses.</p>
+            <div class="feature-badges">
+                <div class="feature-badge"><span>🎯</span> Personalized Plans</div>
+                <div class="feature-badge"><span>⚡</span> AI Coaching</div>
+                <div class="feature-badge"><span>📊</span> Real-time Tracking</div>
+            </div>
         </div>
     </div>
 </body>
@@ -372,8 +555,29 @@ async def auth_status(request: Request):
         "user": user
     }
 
-# Initialize Session Service (Shared DB with CLI)
-db_url = "sqlite:///./spartan_phalanx.db"
+# Initialize Session Service (Cloud SQL in production, SQLite locally)
+def get_db_url():
+    """Get database URL based on environment."""
+    # Check if running on Cloud Run (has CLOUD_SQL_CONNECTION_NAME env var)
+    cloud_sql_connection = os.environ.get("CLOUD_SQL_CONNECTION_NAME")
+
+    if cloud_sql_connection:
+        # Running on Cloud Run - use Cloud SQL with Unix socket
+        db_user = os.environ.get("DB_USER", "spartanapp")
+        db_pass = os.environ.get("DB_PASS", "SpartanWarrior2025!")
+        db_name = os.environ.get("DB_NAME", "spartancoach")
+
+        # Cloud Run provides Unix socket at /cloudsql/<connection_name>
+        socket_path = f"/cloudsql/{cloud_sql_connection}"
+
+        # Use pg8000 driver with Unix socket
+        return f"postgresql+pg8000://{db_user}:{db_pass}@/{db_name}?unix_sock={socket_path}/.s.PGSQL.5432"
+    else:
+        # Local development - use SQLite
+        return "sqlite:///./spartan_phalanx.db"
+
+db_url = get_db_url()
+logger.info(f"Using database: {'Cloud SQL' if 'postgresql' in db_url else 'SQLite'}")
 session_service = DatabaseSessionService(db_url=db_url)
 
 APP_NAME = "SpartanCoach"
@@ -416,6 +620,7 @@ class OnboardRequest(BaseModel):
     weight: float
     goal: str
     target_date: str
+    reason: str
 
 class StateResponse(BaseModel):
     user_name: str
@@ -530,25 +735,11 @@ async def chat(request: ChatRequest):
         # Log the interaction
         log_agent_interaction(session_id, request.message, final_response_text)
 
-        # Check if this is a daily plan request and save the response
-        daily_plan_keywords = ["daily plan", "today's plan", "plan for today", "daily battle", "workout for today", "today's workout", "what should i do today"]
-        message_lower = request.message.lower()
-
-        if any(keyword in message_lower for keyword in daily_plan_keywords):
-            # Check if response looks like a plan (has workout/meal content)
-            response_lower = final_response_text.lower()
-            if any(word in response_lower for word in ["workout", "exercise", "meal", "breakfast", "lunch", "dinner", "sets", "reps"]):
-                # Save as daily plan
-                session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
-                state = session.state
-                today = datetime.now().strftime("%Y-%m-%d")
-                if "daily_plan" not in state:
-                    state["daily_plan"] = {}
-                state["daily_plan"]["date"] = today
-                state["daily_plan"]["plan_text"] = final_response_text
-                state["daily_plan"]["generated_at"] = datetime.now().isoformat()
-                force_update_state(session_id, state)
-                logger.info(f"Daily plan saved from chat for {today}")
+        # NOTE: Daily plan is NOT overwritten from chat responses.
+        # The comprehensive daily plan is only generated once per day via:
+        # 1. accept_plan endpoint (when user accepts master plan)
+        # 2. midnight_reset (automatic daily regeneration)
+        # When user asks about daily plan in chat, agent should RETRIEVE existing plan.
 
         # Get plan_accepted status to return to frontend
         session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
@@ -590,7 +781,8 @@ async def onboard(request: OnboardRequest):
         "height": request.height,
         "weight": request.weight,
         "goal": request.goal,
-        "target_date": request.target_date
+        "target_date": request.target_date,
+        "reason": request.reason
     }
     current_state["profile_locked"] = True
     # Force update the database
@@ -600,7 +792,8 @@ async def onboard(request: OnboardRequest):
     profile_text = (
         f"I have completed my profile setup. Here are my details:\n"
         f"Name: {request.name}, Age: {request.age}, Height: {request.height}cm, "
-        f"Weight: {request.weight}kg, Goal: {request.goal}, Target Date: {request.target_date}\n\n"
+        f"Weight: {request.weight}lbs, Goal: {request.goal}, Target Date: {request.target_date}\n"
+        f"My WHY (reason for this goal): {request.reason}\n\n"
         f"Please create my Master Plan."
     )
     
@@ -625,6 +818,31 @@ async def onboard(request: OnboardRequest):
         "created_at": request.target_date,
         "status": "pending_confirmation"
     }
+
+    # Parse and store fitness targets from master plan
+    fitness_targets = parse_fitness_targets(final_response_text)
+    current_state["fitness_targets"] = fitness_targets
+    logger.info(f"Parsed fitness targets: water={fitness_targets['water_glasses']} glasses, steps={fitness_targets['daily_steps']}")
+
+    # Update daily goals template with dynamic targets
+    water_target = fitness_targets["water_glasses"]
+    step_target = fitness_targets["daily_steps"]
+    step_display = f"{step_target//1000}k" if step_target >= 1000 else str(step_target)
+
+    current_state["daily_goals_template"] = [
+        {"id": "weight", "name": "Weight check-in", "category": "health"},
+        {"id": "ice_wash", "name": "Ice face wash", "category": "health"},
+        {"id": "medicine", "name": "Take medicine", "category": "health"},
+        {"id": "abc_drink", "name": "ABC drink", "category": "nutrition"},
+        {"id": "vitamins", "name": "Take vitamins", "category": "nutrition"},
+        {"id": "nuts", "name": "Eat nuts", "category": "nutrition"},
+        {"id": "water", "name": f"Water ({water_target} glasses)", "category": "hydration", "target": water_target, "current": 0},
+        {"id": "workout", "name": "Completed workout", "category": "exercise"},
+        {"id": "diet", "name": "Completed diet plan", "category": "nutrition"},
+        {"id": "standing", "name": "Standing breaks", "category": "movement"},
+        {"id": "walking", "name": f"{step_display} Steps", "category": "movement", "target": step_target, "current": 0}
+    ]
+
     force_update_state(session_id, current_state)
 
     # Log the interaction
@@ -656,6 +874,15 @@ def reset_session():
         conn.commit()
 
     return {"message": "Session reset. PREPARE FOR GLORY!"}
+
+
+@app.post("/api/daily-reset")
+async def manual_daily_reset():
+    """Manually trigger a daily reset (for testing). Resets goals, water, steps, and generates new daily plan."""
+    logger.info("Manual daily reset triggered via API")
+    await midnight_reset()
+    return {"message": "Daily reset complete. NEW DAY, NEW BATTLES!"}
+
 
 @app.get("/api/state", response_model=StateResponse)
 async def get_state():
@@ -697,11 +924,17 @@ async def accept_plan():
     try:
         daily_plan_prompt = (
             f"I have accepted my Master Plan. Today is {today}. "
-            f"Please generate my DAILY BATTLE PLAN for today with:\n"
-            f"1. Specific workout exercises with sets and reps\n"
-            f"2. Specific meals with foods and portions\n"
-            f"3. Timing recommendations\n"
-            f"Format it as a clear, actionable daily schedule."
+            f"Generate my COMPLETE DAILY BATTLE PLAN as a single unified schedule organized by TIME.\n\n"
+            f"INCLUDE ALL OF THE FOLLOWING IN ONE RESPONSE:\n"
+            f"1. 🌅 MORNING ROUTINE (wake up time, ice wash, weight check-in)\n"
+            f"2. 💪 TODAY'S WORKOUT with specific exercises, sets, reps, and timing\n"
+            f"3. 🍽️ ALL MEALS with specific foods, portions, and exact times\n"
+            f"4. 💧 WATER/HYDRATION checkpoints throughout the day\n"
+            f"5. 👟 STEP TARGETS and movement breaks\n"
+            f"6. ✅ DAILY GOALS CHECKLIST (vitamins, medicine, ABC drink, etc.)\n"
+            f"7. 🌙 EVENING ROUTINE\n\n"
+            f"Format as a TIME-BASED SCHEDULE from wake-up to bedtime.\n"
+            f"DO NOT delegate to sub-agents - provide the complete plan yourself."
         )
 
         content = types.Content(role="user", parts=[types.Part(text=daily_plan_prompt)])
@@ -1185,14 +1418,18 @@ async def log_water():
 
     force_update_state(session_id, state)
 
-    remaining = max(0, 8 - water_intake["glasses"])
+    # Get dynamic water target from master plan
+    fitness_targets = state.get("fitness_targets", {})
+    water_target = fitness_targets.get("water_glasses", 8)
+
+    remaining = max(0, water_target - water_intake["glasses"])
     message = "HYDRATION LOGGED!" if remaining > 0 else "HYDRATION GOAL COMPLETE! OUTSTANDING!"
 
     return {
         "message": message,
         "glasses": water_intake["glasses"],
         "remaining": remaining,
-        "target": 8
+        "target": water_target
     }
 
 
@@ -1213,6 +1450,10 @@ async def get_water_status():
     glasses = water_intake.get("glasses", 0)
     last_logged = water_intake.get("last_logged")
 
+    # Get dynamic water target from master plan
+    fitness_targets = state.get("fitness_targets", {})
+    water_target = fitness_targets.get("water_glasses", 8)
+
     # Calculate hours since last water
     hours_since_last = None
     needs_reminder = False
@@ -1226,12 +1467,12 @@ async def get_water_status():
     return {
         "date": today,
         "glasses": glasses,
-        "target": 8,
-        "remaining": max(0, 8 - glasses),
+        "target": water_target,
+        "remaining": max(0, water_target - glasses),
         "last_logged": last_logged,
         "hours_since_last": hours_since_last,
         "needs_reminder": needs_reminder,
-        "completed": glasses >= 8
+        "completed": glasses >= water_target
     }
 
 
@@ -1272,15 +1513,18 @@ async def log_steps(request: StepLogRequest):
 
     force_update_state(session_id, state)
 
-    target = 10000
+    # Get dynamic step target from master plan
+    fitness_targets = state.get("fitness_targets", {})
+    target = fitness_targets.get("daily_steps", 10000)
+
     remaining = max(0, target - request.steps)
     progress_percent = min(100, round((request.steps / target) * 100))
 
     if request.steps >= target:
-        message = "10K STEPS CONQUERED! OUTSTANDING WORK, WARRIOR!"
-    elif request.steps >= 7500:
+        message = f"{target:,} STEPS CONQUERED! OUTSTANDING WORK, WARRIOR!"
+    elif progress_percent >= 75:
         message = f"SOLID PROGRESS! {remaining:,} steps to go. FINISH STRONG!"
-    elif request.steps >= 5000:
+    elif progress_percent >= 50:
         message = f"HALFWAY THERE! {remaining:,} steps remaining. KEEP MOVING!"
     else:
         message = f"TIME TO MOVE! {remaining:,} steps to hit your target."
@@ -1307,24 +1551,29 @@ async def get_steps_status():
     today_metrics = daily_metrics.get(today, {})
 
     steps = today_metrics.get("steps", 0)
-    target = 10000
+
+    # Get dynamic step target from master plan
+    fitness_targets = state.get("fitness_targets", {})
+    target = fitness_targets.get("daily_steps", 10000)
+
     remaining = max(0, target - steps)
+    progress_percent = (steps / target * 100) if target > 0 else 0
 
     # Calculate time-based urgency
     current_hour = datetime.now().hour
     is_evening = current_hour >= 17
 
-    # Determine urgency level for steps
+    # Determine urgency level for steps (using percentages for dynamic targets)
     if steps >= target:
         urgency = "completed"
         urgency_message = "MISSION ACCOMPLISHED!"
-    elif is_evening and steps < 5000:
+    elif is_evening and progress_percent < 50:
         urgency = "critical"
         urgency_message = f"CRITICAL: {remaining:,} steps needed before day ends!"
-    elif is_evening and steps < 7500:
+    elif is_evening and progress_percent < 75:
         urgency = "high"
         urgency_message = f"Evening crunch! {remaining:,} steps to go. MOVE NOW!"
-    elif steps < 3000 and current_hour >= 12:
+    elif progress_percent < 30 and current_hour >= 12:
         urgency = "medium"
         urgency_message = f"Behind schedule. {remaining:,} steps remaining."
     else:
@@ -1643,12 +1892,14 @@ async def get_urgency_status():
     # Water urgency
     if water_glasses < 4 and current_hour >= 14:
         urgency_level += 1
-        urgency_factors.append(f"Only {water_glasses}/8 glasses water")
+        water_target = state.get("fitness_targets", {}).get("water_glasses", 8)
+        urgency_factors.append(f"Only {water_glasses}/{water_target} glasses water")
 
     # Step urgency (evening)
     if steps < 5000 and current_hour >= 17:
         urgency_level += 1
-        urgency_factors.append(f"Only {steps:,}/10,000 steps")
+        step_target = state.get("fitness_targets", {}).get("daily_steps", 10000)
+        urgency_factors.append(f"Only {steps:,}/{step_target:,} steps")
 
     urgency_level = min(3, urgency_level)
 
@@ -1688,10 +1939,101 @@ async def trigger_checkin():
 # --- Scheduling ---
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
+def parse_fitness_targets(master_plan_text: str) -> dict:
+    """
+    Parse the master plan text to extract fitness targets like water intake and step count.
+    Returns a dict with targets that override defaults.
+    """
+    import re
+    targets = {
+        "water_glasses": 8,  # Default
+        "daily_steps": 10000,  # Default
+    }
+
+    text_lower = master_plan_text.lower()
+
+    # Parse water target (e.g., "8 glasses", "10 glasses of water", "2 liters")
+    water_patterns = [
+        r'(\d+)\s*glasses?\s*(?:of\s*)?water',
+        r'water[:\s]+(\d+)\s*glasses?',
+        r'hydration[:\s]+(\d+)\s*glasses?',
+        r'(\d+)\s*glasses?\s*(?:minimum|daily)',
+    ]
+    for pattern in water_patterns:
+        match = re.search(pattern, text_lower)
+        if match:
+            targets["water_glasses"] = int(match.group(1))
+            break
+
+    # Parse step target (e.g., "10,000 steps", "8000 steps", "15k steps")
+    step_patterns = [
+        r'(\d{1,2}),?(\d{3})\s*steps',  # 10,000 steps or 10000 steps
+        r'(\d+)k\s*steps',  # 10k steps
+        r'steps[:\s]+(\d{1,2}),?(\d{3})',  # steps: 10,000
+        r'daily\s*(?:movement|steps)[:\s]+(\d{1,2}),?(\d{3})',
+    ]
+    for pattern in step_patterns:
+        match = re.search(pattern, text_lower)
+        if match:
+            if 'k' in pattern:
+                targets["daily_steps"] = int(match.group(1)) * 1000
+            elif len(match.groups()) == 2:
+                targets["daily_steps"] = int(match.group(1) + match.group(2))
+            else:
+                targets["daily_steps"] = int(match.group(1))
+            break
+
+    return targets
+
+
+def parse_daily_schedule(daily_plan_text: str) -> list:
+    """
+    Parse the daily plan text to extract scheduled items with times.
+    Returns a list of {time, activity, type} items.
+    """
+    import re
+    schedule = []
+
+    # Common time patterns
+    time_patterns = [
+        r'(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?)',  # 8:00 AM, 8:00am, 8:00
+        r'(\d{1,2}\s*(?:AM|PM|am|pm))',  # 8 AM, 8am
+    ]
+
+    lines = daily_plan_text.split('\n')
+    for line in lines:
+        for pattern in time_patterns:
+            match = re.search(pattern, line, re.IGNORECASE)
+            if match:
+                time_str = match.group(1).strip()
+                # Determine activity type
+                activity_type = "general"
+                line_lower = line.lower()
+                if any(w in line_lower for w in ['breakfast', 'lunch', 'dinner', 'snack', 'meal', 'eat']):
+                    activity_type = "meal"
+                elif any(w in line_lower for w in ['workout', 'exercise', 'training', 'gym', 'pushup', 'pullup']):
+                    activity_type = "workout"
+                elif any(w in line_lower for w in ['water', 'hydrat']):
+                    activity_type = "water"
+                elif any(w in line_lower for w in ['walk', 'step', 'cardio', 'run']):
+                    activity_type = "movement"
+
+                schedule.append({
+                    "time": time_str,
+                    "activity": line.strip()[:100],
+                    "type": activity_type,
+                    "completed": False
+                })
+                break
+
+    return schedule
+
+
 async def proactive_checkin():
     """
     AGGRESSIVE proactive check-in triggered every 2 hours.
     Syncs calendar, evaluates goals, and generates commanding reminders.
+    Includes user's personal motivation (reason) for powerful messaging.
     """
     session_id = get_or_create_session_id()
     session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
@@ -1704,6 +2046,12 @@ async def proactive_checkin():
     now = datetime.now()
     current_hour = now.hour
     logger.info(f"Executing proactive check-in at {now.strftime('%H:%M')} for session {session_id}")
+
+    # Get user's motivation (reason) for personalized messaging
+    warrior_profile = state.get("warrior_profile", {})
+    user_name = warrior_profile.get("name", "Warrior")
+    user_reason = warrior_profile.get("reason", "")
+    user_goal = warrior_profile.get("goal", "")
 
     # Gather current status for context
     goals = state.get("daily_goals", [])
@@ -1740,10 +2088,12 @@ async def proactive_checkin():
         urgency_factors.append(f"Goals only {completion_percent:.0f}% complete")
     if water_glasses < 4 and current_hour >= 14:
         urgency_level += 1
-        urgency_factors.append(f"Only {water_glasses}/8 glasses water")
+        water_target = state.get("fitness_targets", {}).get("water_glasses", 8)
+        urgency_factors.append(f"Only {water_glasses}/{water_target} glasses water")
     if steps < 5000 and current_hour >= 17:
         urgency_level += 1
-        urgency_factors.append(f"Only {steps:,}/10,000 steps")
+        step_target = state.get("fitness_targets", {}).get("daily_steps", 10000)
+        urgency_factors.append(f"Only {steps:,}/{step_target:,} steps")
 
     urgency_level = min(3, urgency_level)
     urgency_labels = ["GREEN", "YELLOW", "ORANGE", "RED"]
@@ -1766,26 +2116,58 @@ async def proactive_checkin():
     # Build time of day context
     time_of_day = "morning" if current_hour < 12 else "afternoon" if current_hour < 17 else "evening"
 
+    # Get daily plan schedule if available
+    daily_plan = state.get("daily_plan", {})
+    daily_plan_text = daily_plan.get("plan_text", "")
+    daily_schedule = state.get("daily_schedule", [])
+
+    # Parse schedule from daily plan if not already parsed
+    if daily_plan_text and not daily_schedule:
+        daily_schedule = parse_daily_schedule(daily_plan_text)
+        state["daily_schedule"] = daily_schedule
+        force_update_state(session_id, state)
+
+    # Find upcoming/current scheduled items
+    schedule_context = ""
+    if daily_schedule:
+        schedule_context = "\n📋 TODAY'S SCHEDULE:\n"
+        for item in daily_schedule[:8]:  # Show first 8 items
+            status = "✅" if item.get("completed") else "⏳"
+            schedule_context += f"   {status} {item['time']}: {item['activity'][:50]}\n"
+
+    # Get dynamic fitness targets from master plan
+    fitness_targets = state.get("fitness_targets", {})
+    water_target = fitness_targets.get("water_glasses", 8)
+    step_target = fitness_targets.get("daily_steps", 10000)
+    step_threshold = int(step_target * 0.7)  # 70% for evening warning
+
     # Build comprehensive check-in prompt with ALL data
     checkin_prompt = f"""SYSTEM TRIGGER: PROACTIVE CHECK-IN - {time_of_day.upper()} ({now.strftime('%I:%M %p')})
 
 ══════════════════════════════════════════════════════════════
-📊 WARRIOR STATUS REPORT
+🔥 WARRIOR: {user_name}
+══════════════════════════════════════════════════════════════
+GOAL: {user_goal}
+WHY: "{user_reason}"
+(Use this motivation to FUEL your commands!)
+
+══════════════════════════════════════════════════════════════
+📊 STATUS REPORT
 ══════════════════════════════════════════════════════════════
 
 GOALS: {completed}/{total} completed ({completion_percent:.0f}%)
 INCOMPLETE: {', '.join(incomplete_goals[:6]) if incomplete_goals else 'NONE - ALL COMPLETE!'}
 
-💧 WATER: {water_glasses}/8 glasses
+💧 WATER: {water_glasses}/{water_target} glasses
    Last logged: {f'{hours_since_water:.1f} hours ago' if hours_since_water else 'NEVER TODAY'}
-   {"⚠️ NEEDS HYDRATION REMINDER!" if (hours_since_water is None or hours_since_water >= 2) and water_glasses < 8 else ""}
+   {"⚠️ NEEDS HYDRATION REMINDER!" if (hours_since_water is None or hours_since_water >= 2) and water_glasses < water_target else ""}
 
-👟 STEPS: {steps:,}/10,000 ({round(steps/10000*100)}%)
-   Remaining: {max(0, 10000-steps):,} steps
-   {"⚠️ EVENING STEP CRUNCH!" if time_of_day == "evening" and steps < 7000 else ""}
+👟 STEPS: {steps:,}/{step_target:,} ({round(steps/step_target*100)}%)
+   Remaining: {max(0, step_target-steps):,} steps
+   {"⚠️ EVENING STEP CRUNCH!" if time_of_day == "evening" and steps < step_threshold else ""}
 
 ⏰ TIME: {hours_remaining} hours until end of day (10 PM)
-
+{schedule_context}
 ══════════════════════════════════════════════════════════════
 🚨 URGENCY LEVEL: {urgency_level} ({urgency_labels[urgency_level]})
 ══════════════════════════════════════════════════════════════
@@ -1797,10 +2179,12 @@ Recommended tone: {urgency_tones[urgency_level]}
 Suggested activity: {"Push-ups, burpees, energizing exercises" if current_gap["time_of_day"] == "morning" else "Standing break, stretches, quick walk" if current_gap["time_of_day"] == "afternoon" else "Walking, jogging, sports to hit step goal"}
 ''' if current_gap else ''}
 ══════════════════════════════════════════════════════════════
-YOUR ORDERS: Based on the status above, issue COMMANDING orders to this warrior.
+YOUR ORDERS: Based on the status above, issue COMMANDING orders to {user_name}.
 - DO NOT use any tools - all data is provided above
 - Be {urgency_tones[urgency_level]}
+- Reference their WHY ("{user_reason[:50]}...") to motivate them
 - Address the most critical gaps first
+- If there are scheduled items coming up, remind them
 - End with a specific action they should take RIGHT NOW
 ══════════════════════════════════════════════════════════════"""
 
@@ -1846,9 +2230,13 @@ async def water_reminder():
     glasses = water_intake.get("glasses", 0)
     last_logged = water_intake.get("last_logged")
 
+    # Get dynamic water target from master plan
+    fitness_targets = state.get("fitness_targets", {})
+    water_target = fitness_targets.get("water_glasses", 8)
+
     # Check if reminder needed
     needs_reminder = False
-    if glasses < 8:
+    if glasses < water_target:
         if last_logged:
             last_time = datetime.fromisoformat(last_logged)
             hours_since = (datetime.now() - last_time).total_seconds() / 3600
@@ -1858,17 +2246,128 @@ async def water_reminder():
 
     if needs_reminder:
         now = datetime.now()
+        warrior_profile = state.get("warrior_profile", {})
+        user_name = warrior_profile.get("name", "Warrior")
+        user_reason = warrior_profile.get("reason", "")
+
+        motivation = f' Remember: "{user_reason[:30]}..."' if user_reason else ""
         reminders = state.get("pending_reminders", [])
         reminders.append({
             "id": f"water_{now.strftime('%H%M')}",
             "type": "water_reminder",
             "time": now.isoformat(),
-            "message": f"💧 HYDRATION CHECK! You have {glasses}/8 glasses. DRINK WATER NOW, WARRIOR!",
+            "message": f"💧 {user_name}, HYDRATION CHECK! You have {glasses}/{water_target} glasses.{motivation} DRINK WATER NOW!",
             "read": False
         })
         state["pending_reminders"] = reminders[-10:]
         force_update_state(session_id, state)
-        logger.info(f"Water reminder sent: {glasses}/8 glasses logged")
+        logger.info(f"Water reminder sent: {glasses}/{water_target} glasses logged")
+
+
+async def schedule_reminder():
+    """
+    Check for upcoming scheduled items from the daily plan and send reminders.
+    Runs every 15 minutes to catch upcoming meals, workouts, etc.
+    """
+    session_id = get_or_create_session_id()
+    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    state = session.state
+
+    if not state.get("plan_accepted"):
+        return
+
+    daily_schedule = state.get("daily_schedule", [])
+    if not daily_schedule:
+        return
+
+    now = datetime.now()
+    current_time = now.strftime("%H:%M")
+
+    # Get user's motivation for personalized reminders
+    warrior_profile = state.get("warrior_profile", {})
+    user_name = warrior_profile.get("name", "Warrior")
+    user_reason = warrior_profile.get("reason", "")
+
+    # Check each scheduled item
+    reminders = state.get("pending_reminders", [])
+    items_updated = False
+
+    for item in daily_schedule:
+        if item.get("completed"):
+            continue
+
+        # Parse the schedule time
+        time_str = item.get("time", "")
+        try:
+            # Handle various time formats
+            import re
+            time_match = re.search(r'(\d{1,2}):?(\d{2})?\s*(AM|PM|am|pm)?', time_str)
+            if time_match:
+                hour = int(time_match.group(1))
+                minute = int(time_match.group(2) or 0)
+                ampm = time_match.group(3)
+
+                if ampm:
+                    if ampm.upper() == 'PM' and hour != 12:
+                        hour += 12
+                    elif ampm.upper() == 'AM' and hour == 12:
+                        hour = 0
+
+                schedule_time = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+                # Check if item is coming up in the next 15-30 minutes
+                time_until = (schedule_time - now).total_seconds() / 60
+
+                if 0 < time_until <= 30:
+                    # Send upcoming reminder
+                    activity_type = item.get("type", "general")
+                    activity = item.get("activity", "Scheduled item")[:60]
+
+                    motivation_hint = f' Remember: "{user_reason[:40]}..."' if user_reason else ""
+
+                    if activity_type == "meal":
+                        message = f"🍽️ {user_name}, MEAL TIME in {int(time_until)} minutes: {activity}.{motivation_hint} FUEL YOUR BODY!"
+                    elif activity_type == "workout":
+                        message = f"💪 {user_name}, WORKOUT in {int(time_until)} minutes: {activity}.{motivation_hint} GET READY TO CRUSH IT!"
+                    elif activity_type == "movement":
+                        message = f"👟 {user_name}, MOVEMENT TIME in {int(time_until)} minutes: {activity}.{motivation_hint} MOVE!"
+                    else:
+                        message = f"⏰ {user_name}, REMINDER in {int(time_until)} minutes: {activity}.{motivation_hint}"
+
+                    # Check if we already sent this reminder
+                    reminder_id = f"schedule_{hour:02d}{minute:02d}"
+                    if not any(r.get("id") == reminder_id for r in reminders):
+                        reminders.append({
+                            "id": reminder_id,
+                            "type": "schedule_reminder",
+                            "time": now.isoformat(),
+                            "message": message,
+                            "read": False
+                        })
+                        items_updated = True
+                        logger.info(f"Schedule reminder sent: {activity} at {time_str}")
+
+                elif time_until < -30:
+                    # Item is past due - mark as overdue reminder
+                    reminder_id = f"overdue_{hour:02d}{minute:02d}"
+                    if not any(r.get("id") == reminder_id for r in reminders):
+                        message = f"⚠️ {user_name}, MISSED: {item.get('activity', 'Scheduled item')[:40]}. Did you complete it? Report NOW!"
+                        reminders.append({
+                            "id": reminder_id,
+                            "type": "overdue_reminder",
+                            "time": now.isoformat(),
+                            "message": message,
+                            "read": False
+                        })
+                        items_updated = True
+
+        except Exception as e:
+            logger.error(f"Error parsing schedule time {time_str}: {e}")
+            continue
+
+    if items_updated:
+        state["pending_reminders"] = reminders[-15:]  # Keep last 15
+        force_update_state(session_id, state)
 
 
 async def scheduled_checkin():
@@ -1877,6 +2376,10 @@ async def scheduled_checkin():
 
 async def midnight_reset():
     """Reset daily goals at midnight and archive previous day's progress."""
+    logger.info("=" * 60)
+    logger.info("MIDNIGHT RESET TRIGGERED")
+    logger.info("=" * 60)
+
     try:
         session_id = get_or_create_session_id()
         session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
@@ -1889,14 +2392,28 @@ async def midnight_reset():
         # Archive previous day's goals and metrics
         from datetime import timedelta
         yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+        today = datetime.now().strftime("%Y-%m-%d")
+
         previous_goals = state.get("daily_goals", [])
         completed_count = sum(1 for g in previous_goals if g.get("completed", False))
 
-        # Get yesterday's metrics
+        # Get yesterday's metrics including water and steps
         daily_metrics = state.get("daily_metrics", {})
         yesterday_metrics = daily_metrics.get(yesterday, {})
 
-        # Add to daily logs
+        # Get yesterday's water and step counts before resetting
+        water_intake = state.get("water_intake", {})
+        yesterday_water = water_intake.get("glasses", 0) if water_intake.get("date") == yesterday else 0
+
+        fitness_targets = state.get("fitness_targets", {})
+        step_target = fitness_targets.get("daily_steps", 10000)
+        current_steps = 0
+        for goal in previous_goals:
+            if goal.get("id") == "walking":
+                current_steps = goal.get("current", 0)
+                break
+
+        # Add to daily logs with water and steps
         daily_logs = state.get("daily_logs", [])
         daily_logs.append({
             "date": yesterday,
@@ -1905,21 +2422,59 @@ async def midnight_reset():
             "weight": yesterday_metrics.get("weight"),
             "sleep": yesterday_metrics.get("sleep"),
             "recovery": yesterday_metrics.get("recovery"),
+            "water_glasses": yesterday_water,
+            "steps": current_steps,
             "archived_at": datetime.now().isoformat()
         })
         state["daily_logs"] = daily_logs[-30:]  # Keep last 30 days
+        logger.info(f"Archived {yesterday}: {completed_count}/{len(previous_goals)} goals, {yesterday_water} glasses water, {current_steps} steps")
 
-        # Reset daily goals from template
+        # ═══════════════════════════════════════════════════════════════
+        # RESET DAILY GOALS FROM TEMPLATE (with current=0 for trackable goals)
+        # ═══════════════════════════════════════════════════════════════
         state["daily_goals"] = [
-            {**goal, "completed": False}
+            {**goal, "completed": False, "current": 0} if "target" in goal else {**goal, "completed": False}
             for goal in state.get("daily_goals_template", [])
         ]
+        logger.info(f"Reset {len(state['daily_goals'])} daily goals from template")
 
-        # Update daily plan date
-        today = datetime.now().strftime("%Y-%m-%d")
+        # ═══════════════════════════════════════════════════════════════
+        # RESET WATER INTAKE
+        # ═══════════════════════════════════════════════════════════════
+        state["water_intake"] = {
+            "date": today,
+            "glasses": 0,
+            "last_logged": None
+        }
+        logger.info("Reset water intake to 0 glasses")
+
+        # ═══════════════════════════════════════════════════════════════
+        # RESET DAILY METRICS FOR TODAY (steps, weight, etc.)
+        # ═══════════════════════════════════════════════════════════════
+        daily_metrics = state.get("daily_metrics", {})
+        daily_metrics[today] = {
+            "steps": 0,
+            "weight": None,
+            "sleep": None,
+            "recovery": None,
+            "logged_at": None
+        }
+        state["daily_metrics"] = daily_metrics
+        logger.info("Reset daily metrics (steps, weight) for today")
+
+        # ═══════════════════════════════════════════════════════════════
+        # UPDATE DAILY PLAN DATE AND CLEAR SCHEDULE
+        # ═══════════════════════════════════════════════════════════════
+        if not isinstance(state.get("daily_plan"), dict):
+            state["daily_plan"] = {}
         state["daily_plan"]["date"] = today
         state["daily_plan"]["generated_at"] = datetime.now().isoformat()
         state["daily_plan"]["plan_text"] = ""  # Clear old plan
+        state["daily_schedule"] = []  # Clear schedule for new day
+        logger.info("Cleared daily plan and schedule")
+
+        # Clear pending reminders for fresh start
+        state["pending_reminders"] = []
 
         force_update_state(session_id, state)
         logger.info(f"Midnight reset complete. Archived {completed_count}/{len(previous_goals)} goals from {yesterday}.")
@@ -1928,11 +2483,17 @@ async def midnight_reset():
         try:
             daily_plan_prompt = (
                 f"Good morning! Today is {today}. "
-                f"Please generate my DAILY BATTLE PLAN for today with:\n"
-                f"1. Specific workout exercises with sets and reps\n"
-                f"2. Specific meals with foods and portions\n"
-                f"3. Timing recommendations\n"
-                f"Format it as a clear, actionable daily schedule."
+                f"Generate my COMPLETE DAILY BATTLE PLAN as a single unified schedule organized by TIME.\n\n"
+                f"INCLUDE ALL OF THE FOLLOWING IN ONE RESPONSE:\n"
+                f"1. 🌅 MORNING ROUTINE (wake up time, ice wash, weight check-in)\n"
+                f"2. 💪 TODAY'S WORKOUT with specific exercises, sets, reps, and timing\n"
+                f"3. 🍽️ ALL MEALS with specific foods, portions, and exact times\n"
+                f"4. 💧 WATER/HYDRATION checkpoints throughout the day\n"
+                f"5. 👟 STEP TARGETS and movement breaks\n"
+                f"6. ✅ DAILY GOALS CHECKLIST (vitamins, medicine, ABC drink, etc.)\n"
+                f"7. 🌙 EVENING ROUTINE\n\n"
+                f"Format as a TIME-BASED SCHEDULE from wake-up to bedtime.\n"
+                f"DO NOT delegate to sub-agents - provide the complete plan yourself."
             )
 
             content = types.Content(role="user", parts=[types.Part(text=daily_plan_prompt)])
@@ -1947,10 +2508,16 @@ async def midnight_reset():
                     if event.content and event.content.parts:
                         daily_plan_text = event.content.parts[0].text.strip()
 
-            # Save the new daily plan
+            # Save the new daily plan and parse schedule
             session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
             state = session.state
             state["daily_plan"]["plan_text"] = daily_plan_text
+
+            # Parse and store the schedule for smart reminders
+            daily_schedule = parse_daily_schedule(daily_plan_text)
+            state["daily_schedule"] = daily_schedule
+            logger.info(f"Parsed {len(daily_schedule)} scheduled items from daily plan")
+
             force_update_state(session_id, state)
 
             logger.info(f"New daily plan generated for {today}.")
@@ -1990,6 +2557,20 @@ async def start_scheduler():
             minute=0,
             id=f'water_{hour:02d}00'
         )
+
+    # ═══════════════════════════════════════════════════════════════
+    # SCHEDULE-AWARE REMINDERS (every 15 minutes during waking hours)
+    # Checks daily plan for upcoming meals, workouts, etc.
+    # ═══════════════════════════════════════════════════════════════
+    for hour in range(7, 22):  # 7 AM to 10 PM
+        for minute in [0, 15, 30, 45]:
+            scheduler.add_job(
+                schedule_reminder,
+                'cron',
+                hour=hour,
+                minute=minute,
+                id=f'schedule_{hour:02d}{minute:02d}'
+            )
 
     # ═══════════════════════════════════════════════════════════════
     # MIDNIGHT RESET - Archive goals and generate new daily plan
@@ -2052,6 +2633,7 @@ async def start_scheduler():
     logger.info("=" * 60)
     logger.info("Proactive check-ins: 7AM, 9AM, 11AM, 1PM, 3PM, 5PM, 7PM, 9PM")
     logger.info("Water reminders: 8AM, 10AM, 12PM, 2PM, 4PM, 6PM, 8PM")
+    logger.info("Schedule reminders: Every 15 minutes (7AM-10PM)")
     logger.info("Midnight reset: 12:00 AM")
     logger.info("Morning calendar sync: 7:05 AM")
     logger.info("=" * 60)

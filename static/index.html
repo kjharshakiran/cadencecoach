@@ -46,6 +46,57 @@
             min-height: 100vh;
             overflow-x: hidden;
             line-height: 1.6;
+            position: relative;
+        }
+
+        /* Modern geometric background pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                linear-gradient(rgba(239, 68, 68, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(239, 68, 68, 0.03) 1px, transparent 1px),
+                linear-gradient(rgba(239, 68, 68, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(239, 68, 68, 0.02) 1px, transparent 1px);
+            background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+            background-position: -1px -1px, -1px -1px, -1px -1px, -1px -1px;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.5;
+        }
+
+        /* Animated gradient orbs */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(239, 68, 68, 0.08) 0%, transparent 25%),
+                radial-gradient(circle at 80% 20%, rgba(239, 68, 68, 0.06) 0%, transparent 25%),
+                radial-gradient(circle at 40% 40%, rgba(220, 38, 38, 0.04) 0%, transparent 30%);
+            animation: float 20s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(2%, 2%) rotate(1deg); }
+            50% { transform: translate(0, 4%) rotate(0deg); }
+            75% { transform: translate(-2%, 2%) rotate(-1deg); }
+        }
+
+        /* Ensure content is above background */
+        header, .container, .nav-tabs, .user-bar, #urgency-banner {
+            position: relative;
+            z-index: 1;
         }
 
         /* User Bar */
@@ -110,21 +161,50 @@
 
         /* Header & Logo */
         header {
-            margin-top: 32px;
-            margin-bottom: 24px;
+            margin-top: 48px;
+            margin-bottom: 32px;
             text-align: center;
-            animation: fadeInDown 0.6s ease-out;
+            animation: fadeInDown 0.8s ease-out;
         }
 
         .logo-container {
-            width: 88px;
-            height: 88px;
-            margin: 0 auto 16px;
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 20px;
             border-radius: 50%;
             overflow: hidden;
-            box-shadow: 0 0 40px var(--accent-glow), 0 0 0 1px rgba(239, 68, 68, 0.2);
+            box-shadow:
+                0 0 60px var(--accent-glow),
+                0 0 100px rgba(239, 68, 68, 0.15),
+                0 0 0 1px rgba(239, 68, 68, 0.3),
+                inset 0 0 30px rgba(0, 0, 0, 0.5);
             position: relative;
             background: var(--gradient-dark);
+            animation: pulse-glow 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 60px var(--accent-glow), 0 0 100px rgba(239, 68, 68, 0.15), 0 0 0 1px rgba(239, 68, 68, 0.3); }
+            50% { box-shadow: 0 0 80px var(--accent-glow), 0 0 120px rgba(239, 68, 68, 0.2), 0 0 0 2px rgba(239, 68, 68, 0.4); }
+        }
+
+        .logo-container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(135deg, var(--accent-color), transparent, var(--accent-color));
+            border-radius: 50%;
+            z-index: -1;
+            animation: rotate 4s linear infinite;
+            opacity: 0.5;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         .logo-container img {
@@ -136,19 +216,34 @@
         h1 {
             color: white;
             text-transform: uppercase;
-            letter-spacing: 6px;
-            font-size: 1.75rem;
+            letter-spacing: 8px;
+            font-size: 2rem;
             margin: 0;
             font-weight: 700;
+            text-shadow: 0 0 40px rgba(239, 68, 68, 0.3);
+            background: linear-gradient(135deg, #fff 0%, #ef4444 50%, #fff 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shine 3s linear infinite;
+        }
+
+        @keyframes shine {
+            to { background-position: 200% center; }
         }
 
         .subtitle {
             color: var(--text-muted);
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            margin-top: 8px;
-            letter-spacing: 2px;
+            font-size: 0.8rem;
+            margin-top: 12px;
+            letter-spacing: 3px;
             text-transform: uppercase;
+            opacity: 0.8;
+            white-space: nowrap;
+            overflow: visible;
+            padding: 0 20px;
         }
 
         /* Navigation */
@@ -217,91 +312,219 @@
             display: flex;
         }
 
-        /* Form Styles */
+        /* Form Styles - Modern Glass Morphism */
         #onboarding-form {
             display: flex;
             flex-direction: column;
             gap: 24px;
-            max-width: 600px;
+            max-width: 560px;
             margin: 0 auto;
             width: 100%;
+            padding: 40px;
+            background: linear-gradient(135deg, rgba(24, 24, 27, 0.9) 0%, rgba(9, 9, 11, 0.95) 100%);
+            border-radius: 24px;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            box-shadow:
+                0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #onboarding-form::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.5), transparent);
+        }
+
+        #onboarding-form::after {
+            content: '⚔️ BEGIN YOUR TRANSFORMATION';
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-color);
+            padding: 4px 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--accent-color);
+            letter-spacing: 2px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 20px;
         }
 
         .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 16px;
+            gap: 20px;
         }
 
         @media (max-width: 600px) {
             .form-grid {
                 grid-template-columns: 1fr;
             }
+            #onboarding-form {
+                padding: 24px;
+                margin: 0 16px;
+            }
         }
 
         .input-group {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
         }
 
         label {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.7rem;
-            color: var(--text-muted);
+            color: var(--accent-color);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
+            opacity: 0.9;
         }
 
         input,
-        select {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid var(--border-color);
+        select,
+        textarea {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(63, 63, 70, 0.5);
             color: white;
             padding: 14px 16px;
             font-family: 'Outfit', sans-serif;
             font-size: 0.95rem;
-            border-radius: 10px;
-            transition: all 0.2s ease;
+            border-radius: 12px;
+            transition: all 0.3s ease;
         }
 
         input:focus,
-        select:focus {
+        select:focus,
+        textarea:focus {
             outline: none;
             border-color: var(--accent-color);
-            box-shadow: 0 0 0 3px var(--accent-glow);
-            background: rgba(0, 0, 0, 0.6);
+            box-shadow:
+                0 0 0 3px var(--accent-glow),
+                0 0 20px rgba(239, 68, 68, 0.1);
+            background: rgba(0, 0, 0, 0.7);
         }
 
-        input::placeholder {
+        input:hover,
+        select:hover,
+        textarea:hover {
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        input::placeholder,
+        textarea::placeholder {
             color: #52525b;
         }
 
         button.primary-btn {
-            background: var(--accent-color);
+            background: linear-gradient(135deg, var(--accent-color) 0%, #dc2626 100%);
             color: white;
             border: none;
-            padding: 16px 32px;
+            padding: 18px 32px;
             font-family: 'JetBrains Mono', monospace;
-            font-weight: 600;
+            font-weight: 700;
             font-size: 0.9rem;
             cursor: pointer;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            border-radius: 10px;
-            transition: all 0.2s ease;
-            margin-top: 8px;
-            box-shadow: 0 4px 14px var(--accent-glow);
+            letter-spacing: 3px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            margin-top: 16px;
+            box-shadow:
+                0 4px 20px var(--accent-glow),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        button.primary-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        button.primary-btn:hover::before {
+            left: 100%;
         }
 
         button.primary-btn:hover {
-            background: var(--accent-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px var(--accent-glow);
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            transform: translateY(-2px);
+            box-shadow:
+                0 8px 30px var(--accent-glow),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
 
         button.primary-btn:active {
             transform: translateY(0);
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+
+        /* Feature Highlights */
+        .feature-highlights {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .feature-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+
+        .feature-item:hover {
+            opacity: 1;
+            transform: translateY(-2px);
+        }
+
+        .feature-icon {
+            font-size: 1.5rem;
+            filter: grayscale(0.3);
+        }
+
+        .feature-item:hover .feature-icon {
+            filter: grayscale(0);
+            transform: scale(1.1);
+        }
+
+        .feature-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        @media (max-width: 600px) {
+            .feature-highlights {
+                flex-direction: column;
+                gap: 16px;
+            }
+            .feature-item {
+                flex-direction: row;
+                gap: 12px;
+            }
         }
 
         /* Chat Styles - Modern Redesign */
@@ -553,6 +776,221 @@
             }
         }
 
+        /* ═══════════════════════════════════════════════════════════════
+           MOBILE RESPONSIVE STYLES
+           ═══════════════════════════════════════════════════════════════ */
+        @media (max-width: 768px) {
+            /* User bar - stack vertically and reposition */
+            .user-bar {
+                position: fixed;
+                top: auto;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                border-radius: 0;
+                padding: 8px 12px;
+                justify-content: space-between;
+                z-index: 1001;
+                background: rgba(24, 24, 27, 0.98);
+                border-top: 1px solid var(--border-color);
+                border-left: none;
+                border-right: none;
+                border-bottom: none;
+            }
+
+            .user-bar .user-info {
+                gap: 6px;
+            }
+
+            .user-bar .user-name {
+                font-size: 12px;
+            }
+
+            .user-bar .logout-btn {
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+
+            /* Notification bell adjustments */
+            .notification-bell {
+                padding: 4px;
+            }
+
+            /* Header adjustments */
+            header {
+                margin-top: 16px;
+                margin-bottom: 16px;
+            }
+
+            .logo-container {
+                width: 60px;
+                height: 60px;
+            }
+
+            h1 {
+                font-size: 1.2rem;
+                letter-spacing: 3px;
+            }
+
+            .subtitle {
+                font-size: 0.65rem;
+            }
+
+            /* Navigation tabs */
+            .nav-tabs {
+                width: 95%;
+                justify-content: center;
+                padding: 4px;
+                gap: 4px;
+            }
+
+            .nav-tab {
+                padding: 8px 12px;
+                font-size: 0.65rem;
+                letter-spacing: 0.5px;
+            }
+
+            /* Main container */
+            .container {
+                width: 98%;
+                padding: 12px;
+                margin-bottom: 70px; /* Space for bottom user bar */
+                border-radius: 12px;
+            }
+
+            /* Chat interface - hide sidebar on mobile */
+            #chat-interface > div {
+                flex-direction: column !important;
+            }
+
+            #goals-sidebar {
+                display: none !important;
+            }
+
+            /* Show a mobile toggle for sidebar */
+            .mobile-sidebar-toggle {
+                display: block !important;
+            }
+
+            /* Chat history */
+            #chat-history {
+                height: calc(100vh - 320px);
+                min-height: 300px;
+            }
+
+            /* Input area */
+            #input-area {
+                padding: 10px;
+                gap: 8px;
+            }
+
+            #message-input {
+                font-size: 14px;
+                padding: 10px 14px;
+            }
+
+            #send-btn, #mic-btn {
+                padding: 10px 14px;
+                font-size: 0.7rem;
+            }
+
+            /* Messages */
+            .message {
+                max-width: 95%;
+                padding: 12px;
+            }
+
+            .message-content {
+                font-size: 0.85rem;
+            }
+
+            /* Urgency banner */
+            .urgency-banner {
+                font-size: 0.7rem;
+                padding: 8px 12px;
+                padding-right: 40px;
+            }
+
+            .urgency-banner .dismiss-btn {
+                right: 8px;
+                font-size: 1rem;
+            }
+
+            /* Integrations grid */
+            .integrations-grid {
+                grid-template-columns: 1fr;
+                padding: 10px;
+                gap: 12px;
+            }
+
+            .integration-card {
+                padding: 16px;
+            }
+
+            /* Onboarding form */
+            .form-grid {
+                padding: 16px;
+            }
+
+            .primary-btn {
+                padding: 14px 24px;
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Extra small screens */
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1rem;
+                letter-spacing: 2px;
+            }
+
+            .nav-tab {
+                padding: 6px 8px;
+                font-size: 0.6rem;
+            }
+
+            #chat-history {
+                height: calc(100vh - 350px);
+            }
+
+            .message-header {
+                gap: 6px;
+            }
+
+            .message-avatar {
+                width: 24px;
+                height: 24px;
+                font-size: 12px;
+            }
+
+            .message-name {
+                font-size: 0.7rem;
+            }
+
+            .message-time {
+                font-size: 0.6rem;
+            }
+        }
+
+        /* Mobile sidebar toggle button (hidden by default, shown on mobile) */
+        .mobile-sidebar-toggle {
+            display: none;
+            position: fixed;
+            bottom: 70px;
+            right: 16px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px var(--accent-glow);
+            z-index: 1000;
+        }
+
         .chart-card {
             background: linear-gradient(180deg, rgba(39,39,42,0.4) 0%, rgba(24,24,27,0.4) 100%);
             border: 1px solid var(--border-color);
@@ -712,6 +1150,11 @@
         @keyframes urgencyPulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.8; }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
         }
 
         /* Notification Bell */
@@ -1240,14 +1683,14 @@
                     <input type="number" id="height" placeholder="cm" required>
                 </div>
                 <div class="input-group">
-                    <label for="weight">Weight (kg)</label>
-                    <input type="number" id="weight" placeholder="kg" required>
+                    <label for="weight">Weight (lbs)</label>
+                    <input type="number" id="weight" placeholder="lbs" required>
                 </div>
             </div>
 
             <div class="input-group">
                 <label for="goal">Goal</label>
-                <input type="text" id="goal" placeholder="e.g., Lose 5kg, Build Muscle" required>
+                <input type="text" id="goal" placeholder="e.g., Lose 10lbs, Build Muscle" required>
             </div>
 
             <div class="input-group">
@@ -1255,7 +1698,28 @@
                 <input type="date" id="target-date" required>
             </div>
 
+            <div class="input-group">
+                <label for="reason">Why is this important to you?</label>
+                <textarea id="reason" placeholder="e.g., I want to be healthy for my kids, I want to feel confident, I want to prove to myself I can do this..." required style="min-height: 80px; resize: vertical;"></textarea>
+            </div>
+
             <button class="primary-btn" onclick="submitProfile()">INITIATE PROTOCOL</button>
+
+            <!-- Feature Highlights -->
+            <div class="feature-highlights">
+                <div class="feature-item">
+                    <span class="feature-icon">🎯</span>
+                    <span class="feature-text">Personalized Plans</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">⚡</span>
+                    <span class="feature-text">AI-Powered Coaching</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📊</span>
+                    <span class="feature-text">Real-time Tracking</span>
+                </div>
+            </div>
         </div>
 
         <!-- Chat Interface -->
@@ -1295,10 +1759,10 @@
                         <div class="water-tracker" id="water-tracker">
                             <div class="water-header">
                                 <span class="water-title">💧 Hydration</span>
-                                <span class="water-count"><span id="water-current">0</span>/8</span>
+                                <span class="water-count"><span id="water-current">0</span>/<span id="water-target">8</span></span>
                             </div>
                             <div class="water-glasses" id="water-glasses">
-                                <!-- 8 glass indicators -->
+                                <!-- Dynamic glass indicators based on target -->
                             </div>
                             <button class="water-btn" onclick="logWater()">+ Log Water</button>
                         </div>
@@ -1307,7 +1771,7 @@
                         <div class="step-tracker" id="step-tracker">
                             <div class="step-header">
                                 <span class="step-title">👟 Steps</span>
-                                <span class="step-count"><span id="step-current">0</span>/10k</span>
+                                <span class="step-count"><span id="step-current">0</span>/<span id="step-target">10k</span></span>
                             </div>
                             <div class="step-progress-bar">
                                 <div class="step-progress-fill" id="step-progress" style="width: 0%"></div>
@@ -1323,8 +1787,8 @@
                             <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--accent-color); text-transform: uppercase; margin-bottom: 10px;">Daily Metrics</div>
                             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
                                 <div>
-                                    <label style="font-size: 0.65rem; color: #666; display: block; margin-bottom: 4px;">Weight (kg)</label>
-                                    <input type="number" id="metric-weight" step="0.1" placeholder="75.0" style="width: 100%; padding: 8px; font-size: 0.85rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 4px; color: white; box-sizing: border-box;">
+                                    <label style="font-size: 0.65rem; color: #666; display: block; margin-bottom: 4px;">Weight (lbs)</label>
+                                    <input type="number" id="metric-weight" step="0.1" placeholder="165" style="width: 100%; padding: 8px; font-size: 0.85rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 4px; color: white; box-sizing: border-box;">
                                 </div>
                                 <div>
                                     <label style="font-size: 0.65rem; color: #666; display: block; margin-bottom: 4px;">Sleep (hrs)</label>
@@ -1371,6 +1835,35 @@
             </div>
         </div>
 
+        <!-- Mobile Sidebar Toggle Button -->
+        <button class="mobile-sidebar-toggle" id="mobile-sidebar-toggle" onclick="toggleMobileSidebar()">📋</button>
+
+        <!-- Mobile Sidebar Overlay -->
+        <div id="mobile-sidebar-overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1002; padding: 20px; overflow-y: auto;">
+            <div style="max-width: 400px; margin: 0 auto; background: var(--card-bg); border-radius: 16px; padding: 16px; border: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 style="margin: 0; font-size: 1rem; color: var(--text-color);">📋 Your Plan</h3>
+                    <button onclick="toggleMobileSidebar()" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+                </div>
+                <!-- Mobile Carousel Tabs -->
+                <div style="display: flex; gap: 4px; margin-bottom: 16px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 10px;">
+                    <button id="mobile-tab-checklist" onclick="switchMobileSidebarTab('checklist')" style="flex: 1; padding: 10px 8px; background: var(--accent-color); border: none; border-radius: 8px; color: white; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; text-transform: uppercase;">Checklist</button>
+                    <button id="mobile-tab-daily" onclick="switchMobileSidebarTab('daily')" style="flex: 1; padding: 10px 8px; background: transparent; border: none; border-radius: 8px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; text-transform: uppercase;">Daily</button>
+                    <button id="mobile-tab-master" onclick="switchMobileSidebarTab('master')" style="flex: 1; padding: 10px 8px; background: transparent; border: none; border-radius: 8px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; text-transform: uppercase;">Master</button>
+                </div>
+                <!-- Mobile Content Views -->
+                <div id="mobile-checklist-view" style="display: block;">
+                    <div id="mobile-goals-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                </div>
+                <div id="mobile-daily-view" style="display: none;">
+                    <div id="mobile-daily-plan-content" style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.6;"></div>
+                </div>
+                <div id="mobile-master-view" style="display: none;">
+                    <div id="mobile-master-plan-content" style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.6;"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- Dashboard -->
         <div id="dashboard-interface" class="section">
             <!-- Journey Progress Card -->
@@ -1391,9 +1884,9 @@
                         <div id="progress-bar" style="background: linear-gradient(90deg, var(--accent-color), #22c55e); height: 100%; width: 0%; transition: width 0.5s;"></div>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.75rem; color: #666;">
-                        <span id="progress-start">Start: 80kg</span>
-                        <span id="progress-current">Current: 80kg</span>
-                        <span id="progress-target">Target: 75kg</span>
+                        <span id="progress-start">Start: 176lbs</span>
+                        <span id="progress-current">Current: 176lbs</span>
+                        <span id="progress-target">Target: 165lbs</span>
                     </div>
                 </div>
             </div>
@@ -1443,7 +1936,7 @@
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px;">
             <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; border: 1px solid var(--border-color);">
-                <div style="font-size: 2rem; color: var(--accent-color); font-weight: bold;" id="stat-weight-lost">-5kg</div>
+                <div style="font-size: 2rem; color: var(--accent-color); font-weight: bold;" id="stat-weight-lost">-11lbs</div>
                 <div style="font-size: 0.75rem; color: #888; text-transform: uppercase;">Weight Lost</div>
             </div>
             <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; border: 1px solid var(--border-color);">
@@ -1462,7 +1955,7 @@
 
         <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 15px; border-radius: 10px; margin-bottom: 25px;">
             <div style="font-size: 0.9rem; color: #ccc;" id="stat-journey">
-                <span id="stat-start">80kg</span> → <span id="stat-final" style="color: var(--accent-color); font-weight: bold;">75kg</span>
+                <span id="stat-start">176lbs</span> → <span id="stat-final" style="color: var(--accent-color); font-weight: bold;">165lbs</span>
             </div>
             <div style="font-size: 0.75rem; color: #888; margin-top: 5px;">Your Transformation Journey</div>
         </div>
@@ -1828,7 +2321,7 @@
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Weight (kg)',
+                        label: 'Weight (lbs)',
                         borderColor: '#ef4444',
                         backgroundColor: 'rgba(239, 68, 68, 0.1)',
                         data: [],
@@ -1990,9 +2483,9 @@
 
                 document.getElementById('progress-percent').textContent = `${data.progress_percent}%`;
                 document.getElementById('progress-bar').style.width = `${data.progress_percent}%`;
-                document.getElementById('progress-start').textContent = `Start: ${data.start_weight}kg`;
-                document.getElementById('progress-current').textContent = `Current: ${data.current_weight}kg`;
-                document.getElementById('progress-target').textContent = `Target: ${data.target_weight}kg`;
+                document.getElementById('progress-start').textContent = `Start: ${data.start_weight}lbs`;
+                document.getElementById('progress-current').textContent = `Current: ${data.current_weight}lbs`;
+                document.getElementById('progress-target').textContent = `Target: ${data.target_weight}lbs`;
 
                 // Update complete button state
                 const btn = document.getElementById('complete-goal-btn');
@@ -2016,7 +2509,7 @@
                 const response = await fetch(`${API_URL}/simulate-journey`, { method: 'POST' });
                 const data = await response.json();
 
-                addMessage("THE SPARTAN", `Journey simulation complete! ${data.days_simulated} days of training data generated. Weight: ${data.start_weight}kg → ${data.current_weight}kg. Check the War Room!`);
+                addMessage("THE SPARTAN", `Journey simulation complete! ${data.days_simulated} days of training data generated. Weight: ${data.start_weight}lbs → ${data.current_weight}lbs. Check the War Room!`);
 
                 // Refresh dashboard
                 updateDashboard();
@@ -2046,12 +2539,12 @@
         function showCelebration(summary) {
             // Update celebration stats
             document.getElementById('celebration-name').textContent = `${summary.name}, you are a TRUE SPARTAN!`;
-            document.getElementById('stat-weight-lost').textContent = `-${summary.weight_lost}kg`;
+            document.getElementById('stat-weight-lost').textContent = `-${summary.weight_lost}lbs`;
             document.getElementById('stat-days').textContent = summary.total_days;
             document.getElementById('stat-sleep').textContent = `${summary.avg_sleep}h`;
             document.getElementById('stat-perfect').textContent = summary.perfect_days;
-            document.getElementById('stat-start').textContent = `${summary.start_weight}kg`;
-            document.getElementById('stat-final').textContent = `${summary.final_weight}kg`;
+            document.getElementById('stat-start').textContent = `${summary.start_weight}lbs`;
+            document.getElementById('stat-final').textContent = `${summary.final_weight}lbs`;
 
             // Show modal
             const modal = document.getElementById('celebration-modal');
@@ -2174,6 +2667,10 @@
 
                     // Always show goals sidebar when profile is locked (even before plan acceptance)
                     document.getElementById('goals-sidebar').style.display = 'flex';
+                    // Only show mobile toggle on mobile devices
+                    if (window.innerWidth <= 768) {
+                        document.getElementById('mobile-sidebar-toggle').style.display = 'block';
+                    }
                     loadDailyGoals();
 
                     // Load metrics only if plan is accepted
@@ -2201,17 +2698,39 @@
                 height: parseFloat(document.getElementById('height').value),
                 weight: parseFloat(document.getElementById('weight').value),
                 goal: document.getElementById('goal').value,
-                target_date: document.getElementById('target-date').value
+                target_date: document.getElementById('target-date').value,
+                reason: document.getElementById('reason').value
             };
 
-            if (!profile.name || !profile.age || !profile.goal) {
-                alert("Fill out all fields, recruit!");
+            if (!profile.name || !profile.age || !profile.goal || !profile.reason) {
+                alert("Fill out all fields, recruit! Your WHY is especially important!");
                 return;
             }
 
             const btn = document.querySelector('.primary-btn');
-            btn.innerHTML = "PROCESSING...";
             btn.disabled = true;
+
+            // Progressive loading messages
+            const loadingMessages = [
+                "⚔️ ANALYZING WARRIOR PROFILE...",
+                "📊 CALCULATING BMR & TDEE...",
+                "🎯 ASSESSING GOAL FEASIBILITY...",
+                "💪 DESIGNING WORKOUT STRATEGY...",
+                "🍽️ CRAFTING NUTRITION PLAN...",
+                "📋 GENERATING MASTER PLAN..."
+            ];
+
+            let messageIndex = 0;
+            btn.innerHTML = loadingMessages[0];
+            btn.style.background = 'linear-gradient(90deg, var(--accent-color) 0%, var(--accent-hover) 50%, var(--accent-color) 100%)';
+            btn.style.backgroundSize = '200% 100%';
+            btn.style.animation = 'shimmer 1.5s infinite';
+
+            // Cycle through messages
+            const messageInterval = setInterval(() => {
+                messageIndex = (messageIndex + 1) % loadingMessages.length;
+                btn.innerHTML = loadingMessages[messageIndex];
+            }, 2000);
 
             try {
                 const response = await fetch(`${API_URL}/onboard`, {
@@ -2220,6 +2739,8 @@
                     body: JSON.stringify(profile)
                 });
                 const data = await response.json();
+
+                clearInterval(messageInterval);
 
                 // Transition UI to chat interface - hide form completely
                 document.getElementById('onboarding-form').classList.remove('active');
@@ -2230,15 +2751,21 @@
 
                 // Show the sidebar immediately (with placeholder data until plan is accepted)
                 document.getElementById('goals-sidebar').style.display = 'flex';
+                // Only show mobile toggle on mobile devices
+                if (window.innerWidth <= 768) {
+                    document.getElementById('mobile-sidebar-toggle').style.display = 'block';
+                }
                 loadDailyGoals();
 
                 // Add the Master Plan message to chat
                 addMessage("THE SPARTAN", data.agent_response || "Profile Locked. Preparing Master Plan...");
 
             } catch (error) {
+                clearInterval(messageInterval);
                 alert("Error submitting profile: " + error);
                 btn.innerHTML = "INITIATE PROTOCOL";
                 btn.disabled = false;
+                btn.style.animation = '';
             }
         }
 
@@ -2273,6 +2800,134 @@
                 loadDailyPlan();
             } else if (tab === 'master') {
                 loadMasterPlan();
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // MOBILE SIDEBAR FUNCTIONS
+        // ═══════════════════════════════════════════════════════════════
+        function toggleMobileSidebar() {
+            const overlay = document.getElementById('mobile-sidebar-overlay');
+            const isVisible = overlay.style.display === 'block';
+
+            if (isVisible) {
+                overlay.style.display = 'none';
+                document.body.style.overflow = '';
+            } else {
+                overlay.style.display = 'block';
+                document.body.style.overflow = 'hidden';
+                // Load content when opening
+                loadMobileGoals();
+                loadMobileDailyPlan();
+                loadMobileMasterPlan();
+            }
+        }
+
+        function switchMobileSidebarTab(tab) {
+            const tabs = ['checklist', 'daily', 'master'];
+            const views = {
+                checklist: document.getElementById('mobile-checklist-view'),
+                daily: document.getElementById('mobile-daily-view'),
+                master: document.getElementById('mobile-master-view')
+            };
+
+            // Reset all tabs
+            tabs.forEach(t => {
+                const tabBtn = document.getElementById(`mobile-tab-${t}`);
+                tabBtn.style.background = 'transparent';
+                tabBtn.style.color = 'var(--text-muted)';
+                views[t].style.display = 'none';
+            });
+
+            // Activate selected tab
+            const activeTab = document.getElementById(`mobile-tab-${tab}`);
+            activeTab.style.background = 'var(--accent-color)';
+            activeTab.style.color = 'white';
+            views[tab].style.display = 'block';
+        }
+
+        async function loadMobileGoals() {
+            const container = document.getElementById('mobile-goals-list');
+            try {
+                const response = await fetch(`${API_URL}/daily-goals`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.goals && data.goals.length > 0) {
+                        container.innerHTML = data.goals.map(goal => `
+                            <div style="display: flex; align-items: center; gap: 10px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; cursor: pointer;" onclick="toggleMobileGoal('${goal.id}', ${goal.completed})">
+                                <div style="width: 20px; height: 20px; border-radius: 4px; border: 2px solid ${goal.completed ? 'var(--success-color)' : 'var(--text-muted)'}; background: ${goal.completed ? 'var(--success-color)' : 'transparent'}; display: flex; align-items: center; justify-content: center;">
+                                    ${goal.completed ? '✓' : ''}
+                                </div>
+                                <span style="flex: 1; font-size: 0.85rem; color: ${goal.completed ? 'var(--text-muted)' : 'var(--text-color)'}; text-decoration: ${goal.completed ? 'line-through' : 'none'};">${goal.name}</span>
+                            </div>
+                        `).join('');
+                    } else {
+                        container.innerHTML = '<p style="color: #888; text-align: center;">No goals yet. Accept your Master Plan first!</p>';
+                    }
+                }
+            } catch (error) {
+                container.innerHTML = '<p style="color: #888; text-align: center;">Error loading goals</p>';
+            }
+        }
+
+        async function toggleMobileGoal(goalId, currentStatus) {
+            const endpoint = currentStatus ? 'uncheck' : 'check';
+            try {
+                await fetch(`${API_URL}/goals/${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ goal_id: goalId })
+                });
+                loadMobileGoals();
+                loadDailyGoals(); // Also refresh desktop version
+            } catch (error) {
+                console.error('Error toggling goal:', error);
+            }
+        }
+
+        async function loadMobileDailyPlan() {
+            const content = document.getElementById('mobile-daily-plan-content');
+            try {
+                const response = await fetch(`${API_URL}/daily-plan`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.plan_text) {
+                        content.innerHTML = formatPlanText(data.plan_text);
+                    } else {
+                        content.innerHTML = '<p style="text-align: center;">No daily plan yet.<br><br>Ask the coach: "What\'s my plan for today?"</p>';
+                    }
+                } else {
+                    content.innerHTML = '<p style="text-align: center;">No daily plan yet.<br><br>Ask the coach: "What\'s my plan for today?"</p>';
+                }
+            } catch (error) {
+                content.innerHTML = '<p style="text-align: center;">Error loading daily plan</p>';
+            }
+        }
+
+        async function loadMobileMasterPlan() {
+            const content = document.getElementById('mobile-master-plan-content');
+            try {
+                const response = await fetch(`${API_URL}/state`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.master_plan && Object.keys(data.master_plan).length > 0) {
+                        let planHtml = '';
+                        if (data.master_plan.summary) {
+                            planHtml += `<div style="margin-bottom: 16px;">${formatPlanText(data.master_plan.summary)}</div>`;
+                        }
+                        if (data.master_plan.phases) {
+                            planHtml += '<strong style="color: var(--accent-color);">Phases:</strong><br>';
+                            data.master_plan.phases.forEach(phase => {
+                                planHtml += `<div style="margin: 8px 0; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 6px;">${phase}</div>`;
+                            });
+                        }
+                        content.innerHTML = planHtml || '<p>Master plan data available</p>';
+                    } else {
+                        content.innerHTML = '<p style="text-align: center;">No master plan yet.<br><br>Complete onboarding to get your Master Plan!</p>';
+                    }
+                }
+            } catch (error) {
+                content.innerHTML = '<p style="text-align: center;">Error loading master plan</p>';
             }
         }
 
@@ -2403,6 +3058,51 @@
             addMessage("YOU", message);
             input.value = '';
 
+            // Check if user is accepting the plan
+            const acceptKeywords = ['accept', 'yes', "let's do it", "i'm ready", 'start', 'lock it', 'lets go', "let's go"];
+            const isAccepting = acceptKeywords.some(keyword => message.toLowerCase().includes(keyword));
+
+            if (isAccepting) {
+                // Handle accept flow separately with proper loading
+                const loadingId = addMessage("THE SPARTAN", "⚔️ LOCKING IN YOUR PLAN... Generating your Daily Battle Plan...", true);
+
+                try {
+                    const acceptResponse = await fetch(`${API_URL}/accept-plan`, { method: 'POST' });
+                    const acceptData = await acceptResponse.json();
+
+                    document.getElementById(loadingId).remove();
+
+                    // Show confirmation message
+                    addMessage("THE SPARTAN", "⚔️ **PLAN OFFICIALLY ACCEPTED!**\n\n🔥 Your Master Plan is LOCKED IN.\n✅ Daily Goals have been INITIALIZED.\n📋 Your Daily Battle Plan has been GENERATED.\n\nCheck the **Daily Plan** and **Checklist** tabs on the right to see your mission for today!\n\n**YOUR TRANSFORMATION BEGINS NOW. NO EXCUSES!** 💪");
+
+                    // Show sidebar and refresh all sections
+                    document.getElementById('goals-sidebar').style.display = 'flex';
+                    // Only show mobile toggle on mobile devices
+                    if (window.innerWidth <= 768) {
+                        document.getElementById('mobile-sidebar-toggle').style.display = 'block';
+                    }
+                    await loadDailyGoals();
+                    await loadTodayMetrics();
+                    await loadDailyPlan();
+                    await loadMasterPlan();
+
+                    // Switch to Daily Plan tab in sidebar to show them the plan
+                    switchSidebarTab('daily');
+
+                    // On mobile, open the sidebar overlay to show the daily plan
+                    if (window.innerWidth <= 768) {
+                        toggleMobileSidebar();
+                        switchMobileSidebarTab('daily');
+                    }
+
+                } catch (e) {
+                    document.getElementById(loadingId).remove();
+                    addMessage("SYSTEM", "Error accepting plan. Please try again.");
+                    console.error('Accept plan error:', e);
+                }
+                return; // Don't send to chat - we handled it
+            }
+
             const loadingId = addMessage("THE SPARTAN", "Thinking...", true);
 
             try {
@@ -2421,6 +3121,7 @@
                     document.getElementById('goals-sidebar').style.display = 'flex';
                     loadDailyGoals();
                     loadTodayMetrics();
+                    loadDailyPlan();
                 }
             } catch (error) {
                 document.getElementById(loadingId).remove();
@@ -2635,10 +3336,10 @@
         // WATER TRACKING
         // ═══════════════════════════════════════════════════════════════
 
-        function renderWaterGlasses(filled) {
+        function renderWaterGlasses(filled, target = 8) {
             const container = document.getElementById('water-glasses');
             container.innerHTML = '';
-            for (let i = 0; i < 8; i++) {
+            for (let i = 0; i < target; i++) {
                 const glass = document.createElement('div');
                 glass.className = `water-glass ${i < filled ? 'filled' : ''}`;
                 glass.textContent = i < filled ? '💧' : '';
@@ -2651,8 +3352,10 @@
                 const response = await fetch(`${API_URL}/water/status`);
                 if (response.ok) {
                     const data = await response.json();
+                    const target = data.target || 8;
                     document.getElementById('water-current').textContent = data.glasses;
-                    renderWaterGlasses(data.glasses);
+                    document.getElementById('water-target').textContent = target;
+                    renderWaterGlasses(data.glasses, target);
                 }
             } catch (error) {
                 console.error('Error loading water status:', error);
@@ -2664,8 +3367,10 @@
                 const response = await fetch(`${API_URL}/water/log`, { method: 'POST' });
                 if (response.ok) {
                     const data = await response.json();
+                    const target = data.target || 8;
                     document.getElementById('water-current').textContent = data.glasses;
-                    renderWaterGlasses(data.glasses);
+                    document.getElementById('water-target').textContent = target;
+                    renderWaterGlasses(data.glasses, target);
 
                     // Show feedback
                     addMessage("THE SPARTAN", data.message);
@@ -2682,12 +3387,22 @@
         // STEP TRACKING
         // ═══════════════════════════════════════════════════════════════
 
+        function formatStepTarget(steps) {
+            // Format step targets nicely (e.g., 10000 -> "10k", 12000 -> "12k")
+            if (steps >= 1000) {
+                return (steps / 1000) + 'k';
+            }
+            return steps.toString();
+        }
+
         async function loadStepStatus() {
             try {
                 const response = await fetch(`${API_URL}/steps/status`);
                 if (response.ok) {
                     const data = await response.json();
+                    const target = data.target || 10000;
                     document.getElementById('step-current').textContent = data.steps.toLocaleString();
+                    document.getElementById('step-target').textContent = formatStepTarget(target);
                     document.getElementById('step-progress').style.width = `${data.progress_percent}%`;
 
                     // Pre-fill input if we have previous steps
@@ -2718,7 +3433,9 @@
 
                 if (response.ok) {
                     const data = await response.json();
+                    const target = data.target || 10000;
                     document.getElementById('step-current').textContent = data.steps.toLocaleString();
+                    document.getElementById('step-target').textContent = formatStepTarget(target);
                     document.getElementById('step-progress').style.width = `${data.progress_percent}%`;
 
                     // Show feedback
@@ -2809,6 +3526,21 @@
         async function updateUrgencyBanner() {
             // Don't show if user dismissed recently
             if (Date.now() < bannerDismissedUntil) {
+                return;
+            }
+
+            // Don't show banner until plan is accepted
+            try {
+                const stateResponse = await fetch(`${API_URL}/state`);
+                if (stateResponse.ok) {
+                    const stateData = await stateResponse.json();
+                    if (!stateData.plan_accepted) {
+                        document.getElementById('urgency-banner').style.display = 'none';
+                        return;
+                    }
+                }
+            } catch (e) {
+                // If state check fails, don't show banner
                 return;
             }
 
