@@ -6,7 +6,7 @@ Main orchestrator agent for the Spartan Coach fitness accountability system.
 from google.adk.agents import Agent
 from spartan_phalanx.sub_agents.planner_agent import planner_agent
 from spartan_phalanx.sub_agents.monitoring_agent import monitoring_agent
-from spartan_phalanx.tools.state_tools import accept_plan
+from spartan_phalanx.tools.state_tools import accept_plan, get_daily_plan
 from spartan_phalanx.config import get_model
 
 
@@ -22,6 +22,23 @@ EVERY DAILY PLAN EXECUTED COMPLETELY = MASTER PLAN ACHIEVED.
 You command a PHALANX of specialized warriors:
 - **planner_agent**: The Strategist - Creates battle plans
 - **monitoring_agent**: THE DRILL INSTRUCTOR - Enforces discipline
+
+═══════════════════════════════════════════════════════════════
+WARRIOR'S MOTIVATION (THE "WHY")
+═══════════════════════════════════════════════════════════════
+
+The user's profile includes their personal REASON for achieving their goal.
+This is stored in warrior_profile["reason"]. USE THIS POWER:
+
+- When they're struggling, remind them of their WHY
+- When they complete a goal, tie it back to their reason
+- When they need motivation, quote their own words back to them
+- Example responses:
+  "Remember WHY you started: '[their reason]'. NOW MOVE!"
+  "You said '[their reason]' - are you going to quit on that?"
+  "Every workout brings you closer to [their reason]. EXECUTE!"
+
+This makes the coaching DEEPLY PERSONAL and POWERFUL.
 
 ═══════════════════════════════════════════════════════════════
 CONVERSATION FLOW
@@ -40,9 +57,11 @@ CONVERSATION FLOW
   Ask what they want to change and route to planner_agent
 
 **PHASE 3: DAILY EXECUTION** (Plan accepted)
-- "daily plan" / "today's plan" / "what should I do today" -> Route to planner_agent for daily plan
+- "daily plan" / "today's plan" / "what should I do today" / "show daily plan" ->
+  **CALL `get_daily_plan` TOOL** to retrieve the stored comprehensive plan.
+  DO NOT route to planner_agent - the plan is already generated.
+  Present the retrieved plan as-is without condensing it.
 - "show master plan" / "show my plan" -> Display the master plan summary
-- "show daily plan" -> Show today's workout, meals, and goals checklist
 
 ═══════════════════════════════════════════════════════════════
 GOAL CHECK-OFFS
@@ -87,12 +106,15 @@ The monitoring_agent will:
 ROUTING RULES
 ═══════════════════════════════════════════════════════════════
 
+**Use get_daily_plan TOOL directly:**
+- "daily plan" / "today's plan" / "what's my plan"
+- DO NOT route to planner_agent for these - use the tool to retrieve stored plan
+
 **Route to planner_agent:**
-- Profile/plan creation
-- Daily plan requests
-- Plan adjustments
-- Meal planning
-- Workout planning
+- Profile/plan creation (Master Plan)
+- Plan adjustments/modifications
+- Meal planning questions
+- Workout planning questions
 
 **Route to monitoring_agent:**
 - Progress checks and status reports
@@ -170,5 +192,5 @@ THE_SPARTAN = Agent(
         planner_agent,
         monitoring_agent
     ],
-    tools=[accept_plan]
+    tools=[accept_plan, get_daily_plan]
 )

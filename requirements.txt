@@ -19,3 +19,7 @@ google-auth
 google-auth-oauthlib
 # Production
 gunicorn
+# Cloud SQL
+cloud-sql-python-connector[pg8000]
+pg8000
+sqlalchemy

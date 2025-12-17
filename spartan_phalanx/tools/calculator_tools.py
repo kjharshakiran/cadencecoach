@@ -1,12 +1,12 @@
 from typing import Dict, Any
 
-def calculate_bmr_tdee(weight_kg: float, height_cm: float, age: int, gender: str, activity_level: str) -> Dict[str, Any]:
+def calculate_bmr_tdee(weight_lbs: float, height_cm: float, age: int, gender: str, activity_level: str) -> Dict[str, Any]:
     """
     Calculates Basal Metabolic Rate (BMR) and Total Daily Energy Expenditure (TDEE)
     using the Mifflin-St Jeor equation.
 
     Args:
-        weight_kg: Weight in kilograms.
+        weight_lbs: Weight in pounds (lbs).
         height_cm: Height in centimeters.
         age: Age in years.
         gender: "male" or "female".
@@ -15,7 +15,9 @@ def calculate_bmr_tdee(weight_kg: float, height_cm: float, age: int, gender: str
     Returns:
         A dictionary containing BMR, TDEE, and activity factor used.
     """
-    
+    # Convert lbs to kg for BMR calculation (1 lb = 0.453592 kg)
+    weight_kg = weight_lbs * 0.453592
+
     # BMR Calculation (Mifflin-St Jeor)
     if gender.lower() == "male":
         bmr = (10 * weight_kg) + (6.25 * height_cm) - (5 * age) + 5

@@ -8,7 +8,7 @@ from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, Depends, Request, Response, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, RedirectResponse, HTMLResponse
+from fastapi.responses import FileResponse, RedirectResponse, HTMLResponse, Response
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from google.genai import types
@@ -967,6 +967,97 @@ async def whatsapp_send_custom(request: Request, message: str):
     result = await whatsapp_service.send_message(phone_number, message)
     return result
 
+@app.post("/api/whatsapp/webhook")
+async def whatsapp_webhook(
+    request: Request,
+    From: str = Form(...),
+    Body: str = Form(...),
+    To: str = Form(None),
+    MessageSid: str = Form(None)
+):
+    """
+    Twilio webhook for incoming WhatsApp messages.
+    Enables two-way chat with the coach via WhatsApp.
+    """
+    logger.info(f"WhatsApp webhook received: From={From}, Body={Body[:50]}...")
+
+    # Extract phone number (remove 'whatsapp:' prefix)
+    phone_number = From.replace("whatsapp:", "").strip()
+
+    # Find the session with this phone number
+    # For now, we use the default session (single user mode)
+    session_id = get_or_create_session_id()
+    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    state = session.state
+
+    # Verify this phone number is connected
+    notification_settings = state.get("notification_settings", {})
+    connected_number = notification_settings.get("whatsapp_number", "")
+
+    # Normalize for comparison
+    if not connected_number:
+        logger.warning(f"WhatsApp message from unconnected number: {phone_number}")
+        # Still respond but inform them to connect
+        await whatsapp_service.send_message(
+            phone_number,
+            "You're not connected to Spartan Coach yet. Visit the app to connect your WhatsApp number."
+        )
+        return Response(content="", media_type="text/xml")
+
+    # Check if plan is accepted
+    if not state.get("plan_accepted"):
+        await whatsapp_service.send_message(
+            phone_number,
+            "Complete your onboarding in the Spartan Coach app first. Once your plan is accepted, you can chat with your coach here!"
+        )
+        return Response(content="", media_type="text/xml")
+
+    try:
+        # Process the message through THE_SPARTAN
+        content = types.Content(role="user", parts=[types.Part(text=Body)])
+        final_response_text = ""
+
+        async for event in runner.run_async(
+            user_id=USER_ID,
+            session_id=session_id,
+            new_message=content
+        ):
+            if event.is_final_response():
+                if (
+                    event.content
+                    and event.content.parts
+                    and hasattr(event.content.parts[0], "text")
+                    and event.content.parts[0].text
+                ):
+                    final_response_text = event.content.parts[0].text.strip()
+
+        # Log the interaction
+        log_agent_interaction(session_id, f"[WhatsApp] {Body}", final_response_text)
+
+        # Send the response back via WhatsApp
+        if final_response_text:
+            # Truncate if too long for WhatsApp (1600 char limit)
+            if len(final_response_text) > 1500:
+                final_response_text = final_response_text[:1497] + "..."
+
+            await whatsapp_service.send_message(phone_number, final_response_text)
+            logger.info(f"WhatsApp response sent to {phone_number}")
+        else:
+            await whatsapp_service.send_message(
+                phone_number,
+                "Message received, warrior! I'm processing your request."
+            )
+
+    except Exception as e:
+        logger.error(f"Error processing WhatsApp message: {e}")
+        await whatsapp_service.send_message(
+            phone_number,
+            "Error processing your message. Try again or use the app."
+        )
+
+    # Return empty TwiML response (we're sending via API, not TwiML)
+    return Response(content="", media_type="text/xml")
+
 @app.get("/auth/logout")
 async def logout(request: Request):
     """Log out the current user."""
@@ -1349,12 +1440,17 @@ async def accept_plan():
     # Set plan as accepted
     state["plan_accepted"] = True
 
-    # Initialize daily goals from template
+    # Initialize daily goals from template (use DEFAULT_GOALS_TEMPLATE as fallback)
     today = datetime.now().strftime("%Y-%m-%d")
+    goals_template = state.get("daily_goals_template") or DEFAULT_GOALS_TEMPLATE
     state["daily_goals"] = [
-        {**goal, "completed": False}
-        for goal in state.get("daily_goals_template", [])
+        {**goal, "completed": False, "current": 0, "date": today} if "target" in goal
+        else {**goal, "completed": False, "date": today}
+        for goal in goals_template
     ]
+    # Ensure template is set for future resets
+    if not state.get("daily_goals_template"):
+        state["daily_goals_template"] = DEFAULT_GOALS_TEMPLATE
     state["daily_plan"] = {"date": today, "generated_at": datetime.now().isoformat()}
     force_update_state(session_id, state)
 
@@ -2998,10 +3094,17 @@ async def midnight_reset():
         # ═══════════════════════════════════════════════════════════════
         # RESET DAILY GOALS FROM TEMPLATE (with current=0 for trackable goals)
         # ═══════════════════════════════════════════════════════════════
+        # Use DEFAULT_GOALS_TEMPLATE as fallback if user's template is empty/missing
+        goals_template = state.get("daily_goals_template") or DEFAULT_GOALS_TEMPLATE
+        today = datetime.now().strftime("%Y-%m-%d")
         state["daily_goals"] = [
-            {**goal, "completed": False, "current": 0} if "target" in goal else {**goal, "completed": False}
-            for goal in state.get("daily_goals_template", [])
+            {**goal, "completed": False, "current": 0, "date": today} if "target" in goal
+            else {**goal, "completed": False, "date": today}
+            for goal in goals_template
         ]
+        # Also ensure template is set for future resets
+        if not state.get("daily_goals_template"):
+            state["daily_goals_template"] = DEFAULT_GOALS_TEMPLATE
         logger.info(f"Reset {len(state['daily_goals'])} daily goals from template")
 
         # ═══════════════════════════════════════════════════════════════
