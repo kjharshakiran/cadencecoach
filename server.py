@@ -1478,6 +1478,28 @@ async def check_goal(request: GoalCheckRequest):
         if goal["id"] == request.goal_id:
             goal["completed"] = True
             goal_found = True
+
+            # Sync trackable goals with their corresponding trackers
+            today = datetime.now().strftime("%Y-%m-%d")
+
+            # Sync water goal with water_intake tracker
+            if goal["id"] == "water" and goal.get("target"):
+                water_intake = state.get("water_intake", {"date": today, "glasses": 0, "last_logged": None})
+                water_intake["glasses"] = goal.get("current", goal.get("target", 8))
+                water_intake["date"] = today
+                water_intake["last_logged"] = datetime.now().isoformat()
+                state["water_intake"] = water_intake
+                logger.info(f"Synced water goal: {water_intake['glasses']} glasses")
+
+            # Sync steps goal with daily_metrics tracker
+            if goal["id"] == "walking" and goal.get("target"):
+                daily_metrics = state.get("daily_metrics", {})
+                if today not in daily_metrics:
+                    daily_metrics[today] = {}
+                daily_metrics[today]["steps"] = goal.get("current", goal.get("target", 10000))
+                state["daily_metrics"] = daily_metrics
+                logger.info(f"Synced steps goal: {daily_metrics[today]['steps']} steps")
+
             break
 
     if not goal_found:
@@ -2304,14 +2326,22 @@ async def get_urgency_status():
     completed_goals = sum(1 for g in goals if g.get("completed", False))
     completion_percent = (completed_goals / total_goals * 100) if total_goals > 0 else 0
 
-    # Water status
+    # Water status - prefer goal's current value
     water_intake = state.get("water_intake", {})
     water_glasses = water_intake.get("glasses", 0)
+    for goal in goals:
+        if goal.get("id") == "water" and goal.get("current") is not None:
+            water_glasses = max(water_glasses, goal.get("current", 0))
+            break
 
-    # Step status
+    # Step status - prefer goal's current value
     today = now.strftime("%Y-%m-%d")
     daily_metrics = state.get("daily_metrics", {})
     steps = daily_metrics.get(today, {}).get("steps", 0)
+    for goal in goals:
+        if goal.get("id") == "walking" and goal.get("current") is not None:
+            steps = max(steps, goal.get("current", 0))
+            break
 
     # Calculate urgency level (0-3)
     urgency_factors = []
@@ -2498,8 +2528,16 @@ async def proactive_checkin():
     incomplete_goals = [g["name"] for g in goals if not g.get("completed", False)]
     completion_percent = (completed / total * 100) if total > 0 else 0
 
+    # Get water data - prefer goal's current value over water_intake tracker
     water_intake = state.get("water_intake", {})
     water_glasses = water_intake.get("glasses", 0)
+
+    # Check if water goal has a current value (from goal tracking)
+    for goal in goals:
+        if goal.get("id") == "water" and goal.get("current") is not None:
+            water_glasses = max(water_glasses, goal.get("current", 0))
+            break
+
     water_last_logged = water_intake.get("last_logged")
     hours_since_water = None
     if water_last_logged:
@@ -2512,6 +2550,12 @@ async def proactive_checkin():
     today = now.strftime("%Y-%m-%d")
     daily_metrics = state.get("daily_metrics", {})
     steps = daily_metrics.get(today, {}).get("steps", 0)
+
+    # Check if steps goal has a current value (from goal tracking)
+    for goal in goals:
+        if goal.get("id") == "walking" and goal.get("current") is not None:
+            steps = max(steps, goal.get("current", 0))
+            break
 
     # Calculate urgency level
     hours_remaining = max(0, 22 - current_hour)
