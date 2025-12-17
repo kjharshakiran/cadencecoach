@@ -11,20 +11,24 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-color: #09090b;
-            --card-bg: rgba(24, 24, 27, 0.9);
-            --card-bg-light: rgba(39, 39, 42, 0.5);
-            --text-color: #fafafa;
-            --text-muted: #a1a1aa;
-            --accent-color: #ef4444;
-            --accent-hover: #dc2626;
-            --accent-glow: rgba(239, 68, 68, 0.3);
-            --success-color: #22c55e;
-            --warning-color: #f59e0b;
-            --info-color: #3b82f6;
-            --border-color: rgba(63, 63, 70, 0.5);
-            --border-light: rgba(82, 82, 91, 0.3);
-            --gradient-dark: linear-gradient(180deg, rgba(24,24,27,0.95) 0%, rgba(9,9,11,0.98) 100%);
+            /* Clean White Theme with Red Accents */
+            --bg-color: #ffffff;
+            --card-bg: #ffffff;
+            --card-bg-light: #f9fafb;
+            --text-color: #111827;
+            --text-muted: #6b7280;
+            --accent-color: #dc2626;
+            --accent-hover: #b91c1c;
+            --accent-glow: rgba(220, 38, 38, 0.12);
+            --success-color: #16a34a;
+            --warning-color: #d97706;
+            --info-color: #2563eb;
+            --border-color: #e5e7eb;
+            --border-light: #f3f4f6;
+            --gradient-dark: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
         }
 
         * {
@@ -33,9 +37,6 @@
 
         body {
             background-color: var(--bg-color);
-            background-image:
-                radial-gradient(ellipse at 50% -20%, rgba(239, 68, 68, 0.08) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 50%, rgba(59, 130, 246, 0.04) 0%, transparent 40%);
             color: var(--text-color);
             font-family: 'Outfit', sans-serif;
             margin: 0;
@@ -49,7 +50,7 @@
             position: relative;
         }
 
-        /* Modern geometric background pattern */
+        /* Subtle grid pattern */
         body::before {
             content: '';
             position: fixed;
@@ -58,32 +59,17 @@
             right: 0;
             bottom: 0;
             background-image:
-                linear-gradient(rgba(239, 68, 68, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(239, 68, 68, 0.03) 1px, transparent 1px),
-                linear-gradient(rgba(239, 68, 68, 0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(239, 68, 68, 0.02) 1px, transparent 1px);
-            background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
-            background-position: -1px -1px, -1px -1px, -1px -1px, -1px -1px;
+                linear-gradient(#f3f4f6 1px, transparent 1px),
+                linear-gradient(90deg, #f3f4f6 1px, transparent 1px);
+            background-size: 40px 40px;
             pointer-events: none;
             z-index: 0;
             opacity: 0.5;
         }
 
-        /* Animated gradient orbs */
+        /* No colored gradient - clean white */
         body::after {
-            content: '';
-            position: fixed;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background:
-                radial-gradient(circle at 20% 80%, rgba(239, 68, 68, 0.08) 0%, transparent 25%),
-                radial-gradient(circle at 80% 20%, rgba(239, 68, 68, 0.06) 0%, transparent 25%),
-                radial-gradient(circle at 40% 40%, rgba(220, 38, 38, 0.04) 0%, transparent 30%);
-            animation: float 20s ease-in-out infinite;
-            pointer-events: none;
-            z-index: 0;
+            content: none;
         }
 
         @keyframes float {
@@ -112,7 +98,7 @@
             border-radius: 12px;
             padding: 8px 16px;
             z-index: 1000;
-            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-md);
         }
 
         .user-info {
@@ -287,13 +273,11 @@
         .container {
             width: 94%;
             max-width: 1100px;
-            background: var(--gradient-dark);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: var(--card-bg);
             padding: 32px;
             border-radius: 20px;
             border: 1px solid var(--border-color);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            box-shadow: var(--shadow-lg);
             animation: fadeInUp 0.6s ease-out;
             margin-bottom: 32px;
             min-height: 600px;
@@ -422,7 +406,7 @@
 
         input::placeholder,
         textarea::placeholder {
-            color: #52525b;
+            color: #94a3b8;
         }
 
         button.primary-btn {
@@ -559,7 +543,7 @@
         }
 
         #chat-history::-webkit-scrollbar-thumb:hover {
-            background: #52525b;
+            background: #94a3b8;
         }
 
         .message {
@@ -605,7 +589,7 @@
         }
 
         .user-avatar {
-            background: linear-gradient(135deg, #3f3f46, #27272a);
+            background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
             border: 1px solid var(--border-color);
         }
 
@@ -626,7 +610,7 @@
 
         .message-time {
             font-size: 0.65rem;
-            color: #52525b;
+            color: #94a3b8;
             margin-left: auto;
         }
 
@@ -655,9 +639,10 @@
         }
 
         .user-message .message-content {
-            background: linear-gradient(135deg, #3f3f46, #27272a);
+            background: linear-gradient(135deg, #1e293b, #334155);
             color: white;
             border-bottom-right-radius: 4px;
+            box-shadow: var(--shadow-md);
         }
 
         .agent-message {
@@ -665,10 +650,11 @@
         }
 
         .agent-message .message-content {
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05));
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            color: #fafafa;
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.08), rgba(220, 38, 38, 0.03));
+            border: 1px solid rgba(220, 38, 38, 0.15);
+            color: var(--text-color);
             border-bottom-left-radius: 4px;
+            box-shadow: var(--shadow-sm);
         }
 
         /* Typing indicator */
@@ -1091,7 +1077,7 @@
         }
 
         .loading {
-            color: #888;
+            color: #64748b;
             font-style: italic;
             font-size: 0.9rem;
         }
@@ -1419,12 +1405,13 @@
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            box-shadow: var(--shadow-sm);
         }
 
         .integration-card:hover {
             border-color: var(--accent-color);
             transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(239, 68, 68, 0.15);
+            box-shadow: var(--shadow-lg);
         }
 
         .integration-card.connected {
@@ -1804,11 +1791,11 @@
 
                         <!-- Progress Bar -->
                         <div id="goals-progress" style="margin-bottom: 12px;">
-                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #888; margin-bottom: 5px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #64748b; margin-bottom: 5px;">
                                 <span id="goals-count">0/0 completed</span>
                                 <span id="goals-percent">0%</span>
                             </div>
-                            <div style="background: #333; height: 6px; border-radius: 3px; overflow: hidden;">
+                            <div style="background: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden;">
                                 <div id="goals-bar" style="background: var(--accent-color); height: 100%; width: 0%; transition: width 0.3s;"></div>
                             </div>
                         </div>
@@ -1820,15 +1807,15 @@
 
                     <!-- Daily Plan View -->
                     <div id="daily-view" style="flex: 1; display: none; flex-direction: column; overflow-y: auto;">
-                        <div id="daily-plan-content" style="font-size: 0.85rem; line-height: 1.6; color: #ccc;">
-                            <p style="color: #888; text-align: center; margin-top: 20px;">Loading daily plan...</p>
+                        <div id="daily-plan-content" style="font-size: 0.85rem; line-height: 1.6; color: #475569;">
+                            <p style="color: #64748b; text-align: center; margin-top: 20px;">Loading daily plan...</p>
                         </div>
                     </div>
 
                     <!-- Master Plan View -->
                     <div id="master-view" style="flex: 1; display: none; flex-direction: column; overflow-y: auto;">
-                        <div id="master-plan-content" style="font-size: 0.85rem; line-height: 1.6; color: #ccc;">
-                            <p style="color: #888; text-align: center; margin-top: 20px;">Loading master plan...</p>
+                        <div id="master-plan-content" style="font-size: 0.85rem; line-height: 1.6; color: #475569;">
+                            <p style="color: #64748b; text-align: center; margin-top: 20px;">Loading master plan...</p>
                         </div>
                     </div>
                 </div>
@@ -1871,16 +1858,16 @@
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <h3>Journey Progress</h3>
                     <div style="display: flex; gap: 10px;">
-                        <button onclick="simulateJourney()" style="padding: 8px 12px; background: transparent; border: 1px solid var(--border-color); color: #888; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; cursor: pointer; text-transform: uppercase;">Simulate Data</button>
+                        <button onclick="simulateJourney()" style="padding: 8px 12px; background: transparent; border: 1px solid var(--border-color); color: #64748b; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; cursor: pointer; text-transform: uppercase;">Simulate Data</button>
                         <button onclick="completeGoal()" id="complete-goal-btn" style="padding: 8px 12px; background: linear-gradient(135deg, #22c55e, #16a34a); border: none; color: white; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; cursor: pointer; text-transform: uppercase;">Complete Goal</button>
                     </div>
                 </div>
                 <div id="journey-progress" style="margin-top: 15px;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-size: 0.85rem; color: #888;">Progress to Goal</span>
+                        <span style="font-size: 0.85rem; color: #64748b;">Progress to Goal</span>
                         <span id="progress-percent" style="font-size: 0.85rem; color: var(--accent-color); font-weight: bold;">0%</span>
                     </div>
-                    <div style="background: #333; height: 12px; border-radius: 6px; overflow: hidden;">
+                    <div style="background: #e2e8f0; height: 12px; border-radius: 6px; overflow: hidden;">
                         <div id="progress-bar" style="background: linear-gradient(90deg, var(--accent-color), #22c55e); height: 100%; width: 0%; transition: width 0.5s;"></div>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.75rem; color: #666;">
@@ -1897,10 +1884,10 @@
                 <div id="streak-calendar" style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px;">
                     <!-- Calendar days will be populated here -->
                 </div>
-                <div style="display: flex; gap: 15px; margin-top: 15px; font-size: 0.75rem; color: #888;">
+                <div style="display: flex; gap: 15px; margin-top: 15px; font-size: 0.75rem; color: #64748b;">
                     <span><span style="display: inline-block; width: 12px; height: 12px; background: #22c55e; border-radius: 2px; margin-right: 5px;"></span>All goals done</span>
                     <span><span style="display: inline-block; width: 12px; height: 12px; background: #f59e0b; border-radius: 2px; margin-right: 5px;"></span>Partial</span>
-                    <span><span style="display: inline-block; width: 12px; height: 12px; background: #333; border-radius: 2px; margin-right: 5px;"></span>No data</span>
+                    <span><span style="display: inline-block; width: 12px; height: 12px; background: #e2e8f0; border-radius: 2px; margin-right: 5px;"></span>No data</span>
                 </div>
             </div>
 
@@ -1928,36 +1915,36 @@
 <button id="reset-btn" type="button" onclick="resetData()">⚠ FACTORY RESET</button>
 
 <!-- Goal Accomplished Modal -->
-<div id="celebration-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center;">
-    <div style="background: linear-gradient(135deg, #1a1a1a 0%, #0a0505 100%); border: 2px solid var(--accent-color); border-radius: 20px; padding: 40px; max-width: 500px; text-align: center; animation: fadeInUp 0.5s ease-out; box-shadow: 0 0 50px var(--accent-glow);">
+<div id="celebration-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+    <div style="background: #ffffff; border: 2px solid var(--accent-color); border-radius: 20px; padding: 40px; max-width: 500px; text-align: center; animation: fadeInUp 0.5s ease-out; box-shadow: 0 25px 50px rgba(0,0,0,0.2);">
         <div style="font-size: 4rem; margin-bottom: 20px;">🏆</div>
         <h2 style="color: var(--accent-color); font-family: 'JetBrains Mono', monospace; font-size: 1.8rem; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 3px;">Goal Accomplished!</h2>
-        <p id="celebration-name" style="color: #888; font-size: 1.1rem; margin-bottom: 30px;">You are a TRUE SPARTAN!</p>
+        <p id="celebration-name" style="color: #64748b; font-size: 1.1rem; margin-bottom: 30px;">You are a TRUE SPARTAN!</p>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px;">
-            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; border: 1px solid var(--border-color);">
+            <div style="background: #f9fafb; padding: 15px; border-radius: 10px; border: 1px solid #e5e7eb;">
                 <div style="font-size: 2rem; color: var(--accent-color); font-weight: bold;" id="stat-weight-lost">-11lbs</div>
-                <div style="font-size: 0.75rem; color: #888; text-transform: uppercase;">Weight Lost</div>
+                <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Weight Lost</div>
             </div>
-            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; border: 1px solid var(--border-color);">
+            <div style="background: #f9fafb; padding: 15px; border-radius: 10px; border: 1px solid #e5e7eb;">
                 <div style="font-size: 2rem; color: #22c55e; font-weight: bold;" id="stat-days">78</div>
-                <div style="font-size: 0.75rem; color: #888; text-transform: uppercase;">Days Completed</div>
+                <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Days Completed</div>
             </div>
-            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; border: 1px solid var(--border-color);">
+            <div style="background: #f9fafb; padding: 15px; border-radius: 10px; border: 1px solid #e5e7eb;">
                 <div style="font-size: 2rem; color: #3b82f6; font-weight: bold;" id="stat-sleep">7.5h</div>
-                <div style="font-size: 0.75rem; color: #888; text-transform: uppercase;">Avg Sleep</div>
+                <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Avg Sleep</div>
             </div>
-            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; border: 1px solid var(--border-color);">
+            <div style="background: #f9fafb; padding: 15px; border-radius: 10px; border: 1px solid #e5e7eb;">
                 <div style="font-size: 2rem; color: #f59e0b; font-weight: bold;" id="stat-perfect">12</div>
-                <div style="font-size: 0.75rem; color: #888; text-transform: uppercase;">Perfect Days</div>
+                <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Perfect Days</div>
             </div>
         </div>
 
-        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 15px; border-radius: 10px; margin-bottom: 25px;">
-            <div style="font-size: 0.9rem; color: #ccc;" id="stat-journey">
+        <div style="background: rgba(220, 38, 38, 0.05); border: 1px solid rgba(220, 38, 38, 0.2); padding: 15px; border-radius: 10px; margin-bottom: 25px;">
+            <div style="font-size: 0.9rem; color: #475569;" id="stat-journey">
                 <span id="stat-start">176lbs</span> → <span id="stat-final" style="color: var(--accent-color); font-weight: bold;">165lbs</span>
             </div>
-            <div style="font-size: 0.75rem; color: #888; margin-top: 5px;">Your Transformation Journey</div>
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 5px;">Your Transformation Journey</div>
         </div>
 
         <button onclick="closeCelebration()" style="background: linear-gradient(135deg, var(--accent-color), #b91c1c); color: white; border: none; padding: 15px 40px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 1rem; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;">Continue as Champion</button>
@@ -2381,10 +2368,10 @@
                 responsive: true,
                 maintainAspectRatio: true,
                 scales: {
-                    y: { grid: { color: '#333' }, ticks: { color: '#888' } },
-                    x: { grid: { color: '#333' }, ticks: { color: '#888' } }
+                    y: { grid: { color: '#e2e8f0' }, ticks: { color: '#64748b' } },
+                    x: { grid: { color: '#e2e8f0' }, ticks: { color: '#64748b' } }
                 },
-                plugins: { legend: { labels: { color: '#ccc' } } }
+                plugins: { legend: { labels: { color: '#64748b' } } }
             };
 
             // Weight Chart
@@ -3179,11 +3166,11 @@
                             </div>
                         `).join('');
                     } else {
-                        container.innerHTML = '<p style="color: #888; text-align: center;">No goals yet. Accept your Master Plan first!</p>';
+                        container.innerHTML = '<p style="color: #64748b; text-align: center;">No goals yet. Accept your Master Plan first!</p>';
                     }
                 }
             } catch (error) {
-                container.innerHTML = '<p style="color: #888; text-align: center;">Error loading goals</p>';
+                container.innerHTML = '<p style="color: #64748b; text-align: center;">Error loading goals</p>';
             }
         }
 
@@ -3251,18 +3238,18 @@
         function formatPlanText(text) {
             return text
                 .replace(/\*\*(.*?)\*\*/g, '<strong style="color: var(--accent-color);">$1</strong>')
-                .replace(/```([\s\S]*?)```/g, '<pre style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; overflow-x: auto; font-size: 0.75rem; white-space: pre-wrap;">$1</pre>')
+                .replace(/```([\s\S]*?)```/g, '<pre style="background: rgba(30,41,59,0.05); padding: 10px; border-radius: 6px; overflow-x: auto; font-size: 0.75rem; white-space: pre-wrap; border: 1px solid rgba(226,232,240,0.8);">$1</pre>')
                 .replace(/\n/g, '<br>');
         }
 
         async function loadDailyPlan() {
             const content = document.getElementById('daily-plan-content');
-            content.innerHTML = '<p style="color: #888; text-align: center;">Loading daily plan...</p>';
+            content.innerHTML = '<p style="color: #64748b; text-align: center;">Loading daily plan...</p>';
 
             try {
                 const response = await fetch(`${API_URL}/daily-plan`);
                 if (!response.ok) {
-                    content.innerHTML = '<p style="color: #888; text-align: center;">No daily plan yet.<br><br>Ask the coach: <em>"What\'s my plan for today?"</em></p>';
+                    content.innerHTML = '<p style="color: #64748b; text-align: center;">No daily plan yet.<br><br>Ask the coach: <em>"What\'s my plan for today?"</em></p>';
                     return;
                 }
                 const data = await response.json();
@@ -3273,22 +3260,22 @@
                         ${formatPlanText(data.plan_text)}
                     `;
                 } else {
-                    content.innerHTML = '<p style="color: #888; text-align: center;">No daily plan yet.<br><br>Ask the coach: <em>"What\'s my plan for today?"</em></p>';
+                    content.innerHTML = '<p style="color: #64748b; text-align: center;">No daily plan yet.<br><br>Ask the coach: <em>"What\'s my plan for today?"</em></p>';
                 }
             } catch (error) {
                 console.error("Error loading daily plan:", error);
-                content.innerHTML = '<p style="color: #888; text-align: center;">Ask the coach for your daily plan!</p>';
+                content.innerHTML = '<p style="color: #64748b; text-align: center;">Ask the coach for your daily plan!</p>';
             }
         }
 
         async function loadMasterPlan() {
             const content = document.getElementById('master-plan-content');
-            content.innerHTML = '<p style="color: #888; text-align: center;">Loading master plan...</p>';
+            content.innerHTML = '<p style="color: #64748b; text-align: center;">Loading master plan...</p>';
 
             try {
                 const response = await fetch(`${API_URL}/master-plan`);
                 if (!response.ok) {
-                    content.innerHTML = '<p style="color: #888; text-align: center;">No master plan available.</p>';
+                    content.innerHTML = '<p style="color: #64748b; text-align: center;">No master plan available.</p>';
                     return;
                 }
                 const data = await response.json();
@@ -3299,11 +3286,11 @@
                         ${formatPlanText(data.plan_text)}
                     `;
                 } else {
-                    content.innerHTML = '<p style="color: #888; text-align: center;">No master plan available.</p>';
+                    content.innerHTML = '<p style="color: #64748b; text-align: center;">No master plan available.</p>';
                 }
             } catch (error) {
                 console.error("Error loading master plan:", error);
-                content.innerHTML = '<p style="color: #888; text-align: center;">Error loading master plan.</p>';
+                content.innerHTML = '<p style="color: #64748b; text-align: center;">Error loading master plan.</p>';
             }
         }
 
@@ -3582,7 +3569,7 @@
                     const label = document.createElement('span');
                     label.style.cssText = `
                         font-size: 0.85rem;
-                        color: ${goal.completed ? '#888' : '#e2e8f0'};
+                        color: ${goal.completed ? '#94a3b8' : '#1e293b'};
                         text-decoration: ${goal.completed ? 'line-through' : 'none'};
                     `;
                     label.textContent = goal.name;
