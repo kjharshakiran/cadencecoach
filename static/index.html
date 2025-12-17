@@ -1984,25 +1984,98 @@
             <div class="integration-category">Activity & Movement Tracking</div>
             <div class="integrations-grid">
                 <!-- WHOOP -->
-                <div class="integration-card">
+                <div class="integration-card" id="whoop-integration-card">
                     <div class="integration-header">
                         <div class="integration-icon" style="background: rgba(0, 255, 136, 0.1);">⌚</div>
                         <div class="integration-title">
                             <h3>WHOOP</h3>
                             <span>Strain & Recovery</span>
                         </div>
-                        <span class="integration-status available">Available</span>
+                        <span class="integration-status available" id="whoop-status-badge">Available</span>
                     </div>
                     <p class="integration-description">
                         Auto-sync strain scores, recovery metrics, sleep performance, and HRV data. Coach will verify your workout intensity claims against actual strain data.
                     </p>
+                    <!-- Whoop Data Display (shown when connected) -->
+                    <div id="whoop-data-display" style="display: none; margin: 12px 0; padding: 12px; background: rgba(0, 255, 136, 0.05); border-radius: 8px; border: 1px solid rgba(0, 255, 136, 0.2);">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem;">
+                            <div>
+                                <span style="color: var(--text-muted);">Recovery:</span>
+                                <span id="whoop-recovery" style="font-weight: 600; margin-left: 4px;">--</span>
+                            </div>
+                            <div>
+                                <span style="color: var(--text-muted);">Strain:</span>
+                                <span id="whoop-strain" style="font-weight: 600; margin-left: 4px;">--</span>
+                            </div>
+                            <div>
+                                <span style="color: var(--text-muted);">Sleep:</span>
+                                <span id="whoop-sleep" style="font-weight: 600; margin-left: 4px;">--</span>
+                            </div>
+                            <div>
+                                <span style="color: var(--text-muted);">HRV:</span>
+                                <span id="whoop-hrv" style="font-weight: 600; margin-left: 4px;">--</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 8px; font-size: 0.75rem; color: var(--text-muted);">
+                            Last sync: <span id="whoop-last-sync">--</span>
+                        </div>
+                    </div>
                     <div class="integration-features">
                         <span class="integration-feature">Strain Score</span>
                         <span class="integration-feature">Recovery %</span>
                         <span class="integration-feature">HRV</span>
                         <span class="integration-feature">Sleep Quality</span>
                     </div>
-                    <button class="integration-btn connect" onclick="connectIntegration('whoop')">Connect WHOOP</button>
+                    <button class="integration-btn connect" id="whoop-connect-btn" onclick="connectWhoop()">Connect WHOOP</button>
+                </div>
+
+                <!-- WhatsApp Notifications -->
+                <div class="integration-card" id="whatsapp-integration-card">
+                    <div class="integration-header">
+                        <div class="integration-icon" style="background: rgba(37, 211, 102, 0.1);">📱</div>
+                        <div class="integration-title">
+                            <h3>WhatsApp</h3>
+                            <span>Push Notifications</span>
+                        </div>
+                        <span class="integration-status available" id="whatsapp-status-badge">Available</span>
+                    </div>
+                    <p class="integration-description">
+                        Get proactive coaching reminders, water alerts, workout notifications, and daily summaries delivered directly to WhatsApp.
+                    </p>
+                    <!-- WhatsApp Connection Form (shown when disconnected) -->
+                    <div id="whatsapp-connect-form" style="margin: 12px 0;">
+                        <div style="display: flex; gap: 8px;">
+                            <input type="tel" id="whatsapp-phone-input" placeholder="+1234567890"
+                                   style="flex: 1; padding: 10px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text-primary); font-size: 0.9rem;">
+                            <button class="integration-btn connect" onclick="connectWhatsApp()" style="padding: 10px 16px;">Connect</button>
+                        </div>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;">
+                            First, send "join <your-sandbox-code>" to +14155238886 on WhatsApp
+                        </p>
+                    </div>
+                    <!-- WhatsApp Connected State (shown when connected) -->
+                    <div id="whatsapp-connected-state" style="display: none; margin: 12px 0; padding: 12px; background: rgba(37, 211, 102, 0.05); border-radius: 8px; border: 1px solid rgba(37, 211, 102, 0.2);">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div>
+                                <span style="color: var(--text-muted); font-size: 0.85rem;">Connected:</span>
+                                <span id="whatsapp-connected-number" style="font-weight: 600; margin-left: 4px; color: var(--accent-primary);"></span>
+                            </div>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <span style="font-size: 0.85rem; color: var(--text-muted);">Enabled</span>
+                                <input type="checkbox" id="whatsapp-enabled-toggle" onchange="toggleWhatsAppEnabled(this.checked)" style="width: 18px; height: 18px;">
+                            </label>
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-top: 12px;">
+                            <button class="integration-btn" onclick="testWhatsApp()" style="flex: 1; padding: 8px; font-size: 0.85rem; background: rgba(37, 211, 102, 0.1); border: 1px solid rgba(37, 211, 102, 0.3);">Send Test</button>
+                            <button class="integration-btn" onclick="disconnectWhatsApp()" style="flex: 1; padding: 8px; font-size: 0.85rem; background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.3); color: #ff4d4d;">Disconnect</button>
+                        </div>
+                    </div>
+                    <div class="integration-features">
+                        <span class="integration-feature">Check-ins</span>
+                        <span class="integration-feature">Water Alerts</span>
+                        <span class="integration-feature">Workouts</span>
+                        <span class="integration-feature">Summaries</span>
+                    </div>
                 </div>
 
                 <!-- Apple Health -->
@@ -2633,14 +2706,258 @@
         function connectIntegration(integrationId) {
             // Placeholder for integration connection logic
             const messages = {
-                'whoop': 'WHOOP integration coming soon! This will auto-sync your strain, recovery, and sleep data.',
                 'google_calendar': 'Google Calendar integration is ready! Connect via OAuth to enable schedule-aware coaching.',
                 'spoonacular': 'Spoonacular integration coming soon! Get meal recommendations based on your calorie targets.',
                 'discrepancy_detector': 'Discrepancy Detector enabled! Your coach will now cross-reference your logs with connected data sources.'
             };
 
             alert(messages[integrationId] || 'Integration setup coming soon!');
-            // TODO: Implement actual OAuth flow for each integration
+        }
+
+        // --- WHOOP Integration ---
+        function connectWhoop() {
+            // Redirect to Whoop OAuth
+            window.location.href = '/auth/whoop';
+        }
+
+        async function disconnectWhoop() {
+            try {
+                const response = await fetch('/auth/whoop/disconnect', { method: 'POST' });
+                if (response.ok) {
+                    updateWhoopUI(false);
+                    alert('WHOOP disconnected successfully.');
+                }
+            } catch (error) {
+                console.error('Error disconnecting Whoop:', error);
+            }
+        }
+
+        async function loadWhoopStatus() {
+            try {
+                const response = await fetch('/api/whoop/status');
+                if (response.ok) {
+                    const data = await response.json();
+                    updateWhoopUI(data.connected, data);
+
+                    if (data.connected) {
+                        // Fetch full summary
+                        loadWhoopSummary();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading Whoop status:', error);
+            }
+        }
+
+        async function loadWhoopSummary() {
+            try {
+                const response = await fetch('/api/whoop/summary');
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Update recovery
+                    const recovery = data.recovery;
+                    if (recovery && recovery.score !== null) {
+                        const recoveryEl = document.getElementById('whoop-recovery');
+                        const score = recovery.score;
+                        let color = '#22c55e'; // green
+                        if (score < 34) color = '#ef4444'; // red
+                        else if (score < 67) color = '#f59e0b'; // yellow
+                        recoveryEl.innerHTML = `<span style="color: ${color}">${score}%</span>`;
+                    }
+
+                    // Update strain
+                    const strain = data.strain;
+                    if (strain && strain.score !== null) {
+                        document.getElementById('whoop-strain').textContent = strain.score.toFixed(1);
+                    }
+
+                    // Update sleep
+                    const sleep = data.sleep;
+                    if (sleep && sleep.sleep_hours !== null) {
+                        document.getElementById('whoop-sleep').textContent = `${sleep.sleep_hours}h`;
+                    }
+
+                    // Update HRV
+                    if (recovery && recovery.hrv !== null) {
+                        document.getElementById('whoop-hrv').textContent = `${recovery.hrv}ms`;
+                    }
+
+                    // Update last sync
+                    if (data.timestamp) {
+                        const syncTime = new Date(data.timestamp);
+                        document.getElementById('whoop-last-sync').textContent = syncTime.toLocaleTimeString();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading Whoop summary:', error);
+            }
+        }
+
+        function updateWhoopUI(connected, data = null) {
+            const card = document.getElementById('whoop-integration-card');
+            const badge = document.getElementById('whoop-status-badge');
+            const btn = document.getElementById('whoop-connect-btn');
+            const dataDisplay = document.getElementById('whoop-data-display');
+
+            if (connected) {
+                card.classList.add('connected');
+                badge.textContent = 'Connected';
+                badge.classList.remove('available');
+                badge.classList.add('connected');
+                btn.textContent = 'Disconnect';
+                btn.classList.remove('connect');
+                btn.classList.add('disconnect');
+                btn.onclick = disconnectWhoop;
+                dataDisplay.style.display = 'block';
+            } else {
+                card.classList.remove('connected');
+                badge.textContent = 'Available';
+                badge.classList.add('available');
+                badge.classList.remove('connected');
+                btn.textContent = 'Connect WHOOP';
+                btn.classList.add('connect');
+                btn.classList.remove('disconnect');
+                btn.onclick = connectWhoop;
+                dataDisplay.style.display = 'none';
+            }
+        }
+
+        // Check for Whoop connection on URL params (after OAuth redirect)
+        function checkWhoopRedirect() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('whoop_connected') === 'true') {
+                // Remove the URL param
+                window.history.replaceState({}, document.title, window.location.pathname);
+                // Show success message
+                setTimeout(() => {
+                    alert('WHOOP connected successfully! Your coach can now verify your workout claims.');
+                }, 500);
+            }
+            if (urlParams.get('whoop_error')) {
+                const error = urlParams.get('whoop_error');
+                window.history.replaceState({}, document.title, window.location.pathname);
+                alert('Failed to connect WHOOP: ' + error);
+            }
+        }
+
+        // --- WhatsApp Integration ---
+        async function connectWhatsApp() {
+            const phoneInput = document.getElementById('whatsapp-phone-input');
+            const phone = phoneInput.value.trim();
+
+            if (!phone) {
+                alert('Please enter your WhatsApp phone number');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/whatsapp/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone_number: phone })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    updateWhatsAppUI(true, data.phone_number, true);
+                    if (data.warning) {
+                        alert('WhatsApp connected!\n\n' + data.warning);
+                    } else {
+                        alert('WhatsApp connected! Check your phone for a test message.');
+                    }
+                } else {
+                    alert('Failed to connect WhatsApp: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error connecting WhatsApp:', error);
+                alert('Error connecting WhatsApp. Please try again.');
+            }
+        }
+
+        async function disconnectWhatsApp() {
+            if (!confirm('Disconnect WhatsApp notifications?')) return;
+
+            try {
+                const response = await fetch('/api/whatsapp/disconnect', { method: 'POST' });
+                if (response.ok) {
+                    updateWhatsAppUI(false);
+                    alert('WhatsApp disconnected successfully.');
+                }
+            } catch (error) {
+                console.error('Error disconnecting WhatsApp:', error);
+            }
+        }
+
+        async function toggleWhatsAppEnabled(enabled) {
+            try {
+                const response = await fetch(`/api/whatsapp/toggle?enabled=${enabled}`, { method: 'POST' });
+                const data = await response.json();
+
+                if (!data.success) {
+                    alert(data.detail || 'Failed to toggle WhatsApp');
+                    document.getElementById('whatsapp-enabled-toggle').checked = !enabled;
+                }
+            } catch (error) {
+                console.error('Error toggling WhatsApp:', error);
+                document.getElementById('whatsapp-enabled-toggle').checked = !enabled;
+            }
+        }
+
+        async function testWhatsApp() {
+            try {
+                const response = await fetch('/api/whatsapp/send-test', { method: 'POST' });
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Test message sent! Check your WhatsApp.');
+                } else {
+                    alert('Failed to send test message: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error sending test WhatsApp:', error);
+                alert('Error sending test message.');
+            }
+        }
+
+        async function loadWhatsAppStatus() {
+            try {
+                const response = await fetch('/api/whatsapp/status');
+                if (response.ok) {
+                    const data = await response.json();
+                    updateWhatsAppUI(data.connected, data.phone_number, data.enabled);
+                }
+            } catch (error) {
+                console.error('Error loading WhatsApp status:', error);
+            }
+        }
+
+        function updateWhatsAppUI(connected, phoneNumber = null, enabled = false) {
+            const card = document.getElementById('whatsapp-integration-card');
+            const badge = document.getElementById('whatsapp-status-badge');
+            const connectForm = document.getElementById('whatsapp-connect-form');
+            const connectedState = document.getElementById('whatsapp-connected-state');
+            const connectedNumber = document.getElementById('whatsapp-connected-number');
+            const enabledToggle = document.getElementById('whatsapp-enabled-toggle');
+
+            if (connected) {
+                card.classList.add('connected');
+                badge.textContent = 'Connected';
+                badge.classList.remove('available');
+                badge.classList.add('connected');
+                connectForm.style.display = 'none';
+                connectedState.style.display = 'block';
+                connectedNumber.textContent = phoneNumber || 'Connected';
+                enabledToggle.checked = enabled;
+            } else {
+                card.classList.remove('connected');
+                badge.textContent = 'Available';
+                badge.classList.add('available');
+                badge.classList.remove('connected');
+                connectForm.style.display = 'block';
+                connectedState.style.display = 'none';
+            }
         }
 
         // --- Core Logic ---
@@ -3591,6 +3908,9 @@
         // Initialize
         loadUserInfo();
         checkState();
+        checkWhoopRedirect(); // Check for Whoop OAuth redirect
+        loadWhoopStatus(); // Load Whoop connection status
+        loadWhatsAppStatus(); // Load WhatsApp connection status
 
         // Initialize trackers after a short delay to ensure DOM is ready
         setTimeout(initTrackers, 500);

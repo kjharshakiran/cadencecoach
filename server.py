@@ -21,8 +21,15 @@ import httpx
 # Import the new architecture
 from spartan_phalanx.main import THE_SPARTAN
 from calendar_service import CalendarService, get_workout_suggestions
+from whoop_service import WhoopService, DiscrepancyDetector, get_sport_name
+from whatsapp_service import whatsapp_service
 
 load_dotenv()
+
+# --- Whoop API Configuration ---
+WHOOP_CLIENT_ID = os.getenv("WHOOP_CLIENT_ID", "")
+WHOOP_CLIENT_SECRET = os.getenv("WHOOP_CLIENT_SECRET", "")
+WHOOP_REDIRECT_URI = os.getenv("WHOOP_REDIRECT_URI", "http://localhost:8000/auth/whoop/callback")
 
 # --- Authentication Configuration ---
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
@@ -528,6 +535,437 @@ async def google_callback(request: Request):
     except Exception as e:
         logger.error(f"Google OAuth error: {e}")
         return RedirectResponse(url="/login?error=OAuth+failed", status_code=302)
+
+# ═══════════════════════════════════════════════════════════════
+# WHOOP OAUTH ENDPOINTS
+# ═══════════════════════════════════════════════════════════════
+
+@app.get("/auth/whoop")
+async def whoop_login(request: Request):
+    """Initiate Whoop OAuth flow."""
+    if not WHOOP_CLIENT_ID:
+        raise HTTPException(status_code=500, detail="Whoop OAuth not configured")
+
+    # Generate state for CSRF protection
+    state = secrets.token_urlsafe(32)
+    request.session["whoop_oauth_state"] = state
+
+    auth_url = WhoopService.get_authorization_url(state=state)
+    logger.info(f"Redirecting to Whoop OAuth: {auth_url}")
+    return RedirectResponse(url=auth_url, status_code=302)
+
+@app.get("/auth/whoop/callback")
+async def whoop_callback(request: Request, code: str = None, state: str = None, error: str = None):
+    """Handle Whoop OAuth callback."""
+    if error:
+        logger.error(f"Whoop OAuth error: {error}")
+        return RedirectResponse(url="/?whoop_error=" + error, status_code=302)
+
+    if not code:
+        logger.error("No authorization code received from Whoop")
+        return RedirectResponse(url="/?whoop_error=no_code", status_code=302)
+
+    # Verify state (CSRF protection)
+    stored_state = request.session.get("whoop_oauth_state")
+    if state and stored_state and state != stored_state:
+        logger.error("Whoop OAuth state mismatch")
+        return RedirectResponse(url="/?whoop_error=state_mismatch", status_code=302)
+
+    try:
+        # Exchange code for tokens
+        tokens = await WhoopService.exchange_code_for_token(code)
+
+        # Get session ID and store tokens
+        session_id = get_or_create_session_id()
+        session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+        state = session.state
+
+        state["whoop_connected"] = True
+        state["whoop_tokens"] = {
+            "access_token": tokens.get("access_token"),
+            "refresh_token": tokens.get("refresh_token"),
+            "expires_at": datetime.now().isoformat(),
+            "connected_at": datetime.now().isoformat()
+        }
+
+        force_update_state(session_id, state)
+
+        # Fetch initial Whoop data
+        try:
+            whoop = WhoopService(
+                access_token=tokens.get("access_token"),
+                refresh_token=tokens.get("refresh_token")
+            )
+            profile = await whoop.get_profile()
+            summary = await whoop.get_daily_summary()
+
+            state["whoop_profile"] = profile
+            state["whoop_data"] = summary
+            force_update_state(session_id, state)
+
+            logger.info(f"Whoop connected successfully. Recovery: {summary.get('recovery', {}).get('score', 'N/A')}%")
+            await whoop.close()
+        except Exception as e:
+            logger.error(f"Error fetching initial Whoop data: {e}")
+
+        logger.info("Whoop OAuth successful")
+        return RedirectResponse(url="/?whoop_connected=true", status_code=302)
+
+    except Exception as e:
+        logger.error(f"Whoop OAuth token exchange failed: {e}")
+        return RedirectResponse(url="/?whoop_error=token_exchange_failed", status_code=302)
+
+@app.post("/auth/whoop/disconnect")
+async def whoop_disconnect(request: Request):
+    """Disconnect Whoop integration."""
+    session_id = get_or_create_session_id()
+    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    state = session.state
+
+    state["whoop_connected"] = False
+    state["whoop_tokens"] = None
+    state["whoop_profile"] = None
+    state["whoop_data"] = None
+
+    force_update_state(session_id, state)
+    logger.info("Whoop disconnected")
+    return {"message": "Whoop disconnected successfully"}
+
+# ═══════════════════════════════════════════════════════════════
+# WHOOP DATA ENDPOINTS
+# ═══════════════════════════════════════════════════════════════
+
+@app.get("/api/whoop/status")
+async def whoop_status(request: Request):
+    """Get Whoop connection status."""
+    session_id = get_or_create_session_id()
+    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    state = session.state
+
+    return {
+        "connected": state.get("whoop_connected", False),
+        "profile": state.get("whoop_profile"),
+        "connected_at": state.get("whoop_tokens", {}).get("connected_at") if state.get("whoop_tokens") else None
+    }
+
+@app.get("/api/whoop/summary")
+async def whoop_summary(request: Request):
+    """Get today's Whoop summary (recovery, strain, sleep)."""
+    session_id = get_or_create_session_id()
+    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    state = session.state
+
+    if not state.get("whoop_connected"):
+        raise HTTPException(status_code=400, detail="Whoop not connected")
+
+    tokens = state.get("whoop_tokens", {})
+    if not tokens.get("access_token"):
+        raise HTTPException(status_code=400, detail="No Whoop access token")
+
+    try:
+        whoop = WhoopService(
+            access_token=tokens.get("access_token"),
+            refresh_token=tokens.get("refresh_token")
+        )
+        summary = await whoop.get_daily_summary()
+
+        # Update stored data
+        state["whoop_data"] = summary
+        force_update_state(session_id, state)
+
+        await whoop.close()
+        return summary
+
+    except Exception as e:
+        logger.error(f"Error fetching Whoop summary: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/whoop/recovery")
+async def whoop_recovery(request: Request):
+    """Get latest recovery data."""
+    session_id = get_or_create_session_id()
+    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    state = session.state
+
+    if not state.get("whoop_connected"):
+        raise HTTPException(status_code=400, detail="Whoop not connected")
+
+    tokens = state.get("whoop_tokens", {})
+
+    try:
+        whoop = WhoopService(
+            access_token=tokens.get("access_token"),
+            refresh_token=tokens.get("refresh_token")
+        )
+        recovery = await whoop.get_latest_recovery()
+        await whoop.close()
+        return recovery or {"message": "No recovery data available"}
+
+    except Exception as e:
+        logger.error(f"Error fetching recovery: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/whoop/verify-workout")
+async def verify_workout(request: Request, intensity: str = "high"):
+    """Verify user's workout claim against Whoop data (Discrepancy Detection)."""
+    session_id = get_or_create_session_id()
+    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    state = session.state
+
+    if not state.get("whoop_connected"):
+        return {
+            "verified": None,
+            "message": "Whoop not connected. Cannot verify workout claim. Connect Whoop for accountability!"
+        }
+
+    tokens = state.get("whoop_tokens", {})
+
+    try:
+        whoop = WhoopService(
+            access_token=tokens.get("access_token"),
+            refresh_token=tokens.get("refresh_token")
+        )
+        detector = DiscrepancyDetector(whoop)
+        result = await detector.check_workout_claim("User claimed workout", intensity)
+        await whoop.close()
+        return result
+
+    except Exception as e:
+        logger.error(f"Error verifying workout: {e}")
+        return {"verified": None, "message": f"Verification error: {str(e)}"}
+
+@app.post("/api/whoop/verify-sleep")
+async def verify_sleep(request: Request, hours_claimed: float):
+    """Verify user's sleep claim against Whoop data."""
+    session_id = get_or_create_session_id()
+    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    state = session.state
+
+    if not state.get("whoop_connected"):
+        return {
+            "verified": None,
+            "message": "Whoop not connected. Cannot verify sleep claim."
+        }
+
+    tokens = state.get("whoop_tokens", {})
+
+    try:
+        whoop = WhoopService(
+            access_token=tokens.get("access_token"),
+            refresh_token=tokens.get("refresh_token")
+        )
+        detector = DiscrepancyDetector(whoop)
+        result = await detector.check_sleep_claim(hours_claimed)
+        await whoop.close()
+        return result
+
+    except Exception as e:
+        logger.error(f"Error verifying sleep: {e}")
+        return {"verified": None, "message": f"Verification error: {str(e)}"}
+
+@app.get("/api/whoop/training-readiness")
+async def training_readiness(request: Request):
+    """Check if user should train hard today based on recovery."""
+    session_id = get_or_create_session_id()
+    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    state = session.state
+
+    if not state.get("whoop_connected"):
+        return {
+            "can_train_hard": None,
+            "message": "Whoop not connected. Connect to get personalized training recommendations."
+        }
+
+    tokens = state.get("whoop_tokens", {})
+
+    try:
+        whoop = WhoopService(
+            access_token=tokens.get("access_token"),
+            refresh_token=tokens.get("refresh_token")
+        )
+        detector = DiscrepancyDetector(whoop)
+        result = await detector.check_recovery_for_training()
+        await whoop.close()
+        return result
+
+    except Exception as e:
+        logger.error(f"Error checking training readiness: {e}")
+        return {"can_train_hard": None, "message": f"Error: {str(e)}"}
+
+@app.get("/api/whoop/accountability-report")
+async def accountability_report(request: Request):
+    """Get full accountability report comparing behavior to Whoop data."""
+    session_id = get_or_create_session_id()
+    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    state = session.state
+
+    if not state.get("whoop_connected"):
+        return {
+            "message": "Whoop not connected. Connect for full accountability tracking."
+        }
+
+    tokens = state.get("whoop_tokens", {})
+
+    try:
+        whoop = WhoopService(
+            access_token=tokens.get("access_token"),
+            refresh_token=tokens.get("refresh_token")
+        )
+        detector = DiscrepancyDetector(whoop)
+        report = await detector.get_accountability_report()
+        await whoop.close()
+        return report
+
+    except Exception as e:
+        logger.error(f"Error generating accountability report: {e}")
+        return {"message": f"Error: {str(e)}"}
+
+# ═══════════════════════════════════════════════════════════════
+# WHATSAPP ENDPOINTS
+# ═══════════════════════════════════════════════════════════════
+
+class WhatsAppConnectRequest(BaseModel):
+    phone_number: str
+
+@app.get("/api/whatsapp/status")
+async def whatsapp_status_endpoint(request: Request):
+    """Get WhatsApp connection status."""
+    session_id = get_or_create_session_id()
+    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    state = session.state
+
+    notification_settings = state.get("notification_settings", {})
+
+    return {
+        "connected": notification_settings.get("whatsapp_number") is not None,
+        "enabled": notification_settings.get("enable_whatsapp", False),
+        "phone_number": notification_settings.get("whatsapp_number"),
+        "configured": whatsapp_service.is_configured()
+    }
+
+@app.post("/api/whatsapp/connect")
+async def whatsapp_connect(request: Request, data: WhatsAppConnectRequest):
+    """Connect user's WhatsApp number and send verification message."""
+    session_id = get_or_create_session_id()
+    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    state = session.state
+
+    phone_number = data.phone_number.strip()
+
+    # Validate phone number format
+    if not phone_number:
+        raise HTTPException(status_code=400, detail="Phone number is required")
+
+    # Normalize phone number
+    if not phone_number.startswith("+"):
+        phone_number = f"+{phone_number}"
+
+    # Update notification settings
+    notification_settings = state.get("notification_settings", {
+        "wake_time": "07:00",
+        "sleep_time": "22:00",
+        "enable_push": True
+    })
+    notification_settings["whatsapp_number"] = phone_number
+    notification_settings["enable_whatsapp"] = True
+    state["notification_settings"] = notification_settings
+
+    force_update_state(session_id, state)
+
+    # Send test message to verify connection
+    result = await whatsapp_service.send_test_message(phone_number)
+
+    if result.get("success"):
+        logger.info(f"WhatsApp connected: {phone_number}")
+        return {
+            "success": True,
+            "message": "WhatsApp connected! Check your phone for a test message.",
+            "phone_number": phone_number
+        }
+    else:
+        # Still save the number, but warn about the test message failure
+        logger.warning(f"WhatsApp connected but test message failed: {result.get('error')}")
+        return {
+            "success": True,
+            "warning": f"Number saved, but test message failed: {result.get('error')}. Make sure you've joined the Twilio sandbox first.",
+            "phone_number": phone_number
+        }
+
+@app.post("/api/whatsapp/disconnect")
+async def whatsapp_disconnect(request: Request):
+    """Disconnect WhatsApp integration."""
+    session_id = get_or_create_session_id()
+    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    state = session.state
+
+    notification_settings = state.get("notification_settings", {})
+    notification_settings["whatsapp_number"] = None
+    notification_settings["enable_whatsapp"] = False
+    state["notification_settings"] = notification_settings
+
+    force_update_state(session_id, state)
+    logger.info("WhatsApp disconnected")
+
+    return {"success": True, "message": "WhatsApp disconnected"}
+
+@app.post("/api/whatsapp/toggle")
+async def whatsapp_toggle(request: Request, enabled: bool):
+    """Enable/disable WhatsApp notifications without disconnecting."""
+    session_id = get_or_create_session_id()
+    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    state = session.state
+
+    notification_settings = state.get("notification_settings", {})
+
+    if enabled and not notification_settings.get("whatsapp_number"):
+        raise HTTPException(status_code=400, detail="Connect WhatsApp first before enabling")
+
+    notification_settings["enable_whatsapp"] = enabled
+    state["notification_settings"] = notification_settings
+
+    force_update_state(session_id, state)
+
+    return {
+        "success": True,
+        "enabled": enabled,
+        "message": f"WhatsApp notifications {'enabled' if enabled else 'disabled'}"
+    }
+
+@app.post("/api/whatsapp/send-test")
+async def whatsapp_send_test(request: Request):
+    """Send a test message to verify the connection."""
+    session_id = get_or_create_session_id()
+    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    state = session.state
+
+    notification_settings = state.get("notification_settings", {})
+    phone_number = notification_settings.get("whatsapp_number")
+
+    if not phone_number:
+        raise HTTPException(status_code=400, detail="WhatsApp not connected. Connect first.")
+
+    result = await whatsapp_service.send_test_message(phone_number)
+
+    if result.get("success"):
+        return {"success": True, "message": "Test message sent! Check your WhatsApp."}
+    else:
+        return {"success": False, "error": result.get("error", "Failed to send test message")}
+
+@app.post("/api/whatsapp/send")
+async def whatsapp_send_custom(request: Request, message: str):
+    """Send a custom message (for testing/admin purposes)."""
+    session_id = get_or_create_session_id()
+    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    state = session.state
+
+    notification_settings = state.get("notification_settings", {})
+    phone_number = notification_settings.get("whatsapp_number")
+
+    if not phone_number:
+        raise HTTPException(status_code=400, detail="WhatsApp not connected")
+
+    result = await whatsapp_service.send_message(phone_number, message)
+    return result
 
 @app.get("/auth/logout")
 async def logout(request: Request):
@@ -2210,6 +2648,24 @@ YOUR ORDERS: Based on the status above, issue COMMANDING orders to {user_name}.
         state["pending_reminders"] = reminders[-10:]  # Keep last 10
         force_update_state(session_id, state)
 
+        # Send WhatsApp notification if enabled
+        notification_settings = state.get("notification_settings", {})
+        if notification_settings.get("enable_whatsapp") and notification_settings.get("whatsapp_number"):
+            try:
+                await whatsapp_service.send_template_message(
+                    notification_settings["whatsapp_number"],
+                    "proactive_checkin",
+                    completed=completed,
+                    total=total,
+                    percentage=round(completion_percent),
+                    urgency_level=f"{urgency_level} ({urgency_labels[urgency_level]})",
+                    message=final_response_text[:300],
+                    hours_remaining=hours_remaining
+                )
+                logger.info("WhatsApp proactive check-in sent")
+            except Exception as wa_err:
+                logger.error(f"WhatsApp send error: {wa_err}")
+
         log_agent_interaction(session_id, f"PROACTIVE_CHECKIN_{time_of_day.upper()}", final_response_text)
         logger.info(f"Proactive check-in complete. Response stored as reminder.")
 
@@ -2262,6 +2718,23 @@ async def water_reminder():
         state["pending_reminders"] = reminders[-10:]
         force_update_state(session_id, state)
         logger.info(f"Water reminder sent: {glasses}/{water_target} glasses logged")
+
+        # Send WhatsApp water reminder if enabled
+        notification_settings = state.get("notification_settings", {})
+        if notification_settings.get("enable_whatsapp") and notification_settings.get("whatsapp_number"):
+            try:
+                hours_since = (datetime.now() - datetime.fromisoformat(last_logged)).total_seconds() / 3600 if last_logged else 0
+                await whatsapp_service.send_template_message(
+                    notification_settings["whatsapp_number"],
+                    "water_reminder",
+                    glasses=glasses,
+                    target=water_target,
+                    hours_since=round(hours_since, 1) if hours_since else "N/A",
+                    reason=user_reason[:50] if user_reason else "your transformation"
+                )
+                logger.info("WhatsApp water reminder sent")
+            except Exception as wa_err:
+                logger.error(f"WhatsApp water reminder error: {wa_err}")
 
 
 async def schedule_reminder():
@@ -2369,6 +2842,24 @@ async def schedule_reminder():
         state["pending_reminders"] = reminders[-15:]  # Keep last 15
         force_update_state(session_id, state)
 
+        # Send WhatsApp schedule reminder if enabled
+        notification_settings = state.get("notification_settings", {})
+        if notification_settings.get("enable_whatsapp") and notification_settings.get("whatsapp_number"):
+            # Send the last reminder that was added
+            last_reminder = reminders[-1] if reminders else None
+            if last_reminder:
+                try:
+                    await whatsapp_service.send_template_message(
+                        notification_settings["whatsapp_number"],
+                        "schedule_reminder",
+                        activity_type=last_reminder.get("type", "schedule"),
+                        activity=last_reminder.get("message", "")[:100],
+                        scheduled_time=now.strftime("%I:%M %p")
+                    )
+                    logger.info("WhatsApp schedule reminder sent")
+                except Exception as wa_err:
+                    logger.error(f"WhatsApp schedule reminder error: {wa_err}")
+
 
 async def scheduled_checkin():
     """Legacy check-in function - redirects to proactive_checkin."""
@@ -2428,6 +2919,37 @@ async def midnight_reset():
         })
         state["daily_logs"] = daily_logs[-30:]  # Keep last 30 days
         logger.info(f"Archived {yesterday}: {completed_count}/{len(previous_goals)} goals, {yesterday_water} glasses water, {current_steps} steps")
+
+        # Send WhatsApp evening summary before resetting
+        notification_settings = state.get("notification_settings", {})
+        if notification_settings.get("enable_whatsapp") and notification_settings.get("whatsapp_number"):
+            try:
+                total_goals = len(previous_goals)
+                percentage = round((completed_count / total_goals * 100)) if total_goals > 0 else 0
+
+                # Determine verdict
+                if percentage >= 90:
+                    verdict = "OUTSTANDING! You crushed it today!"
+                elif percentage >= 70:
+                    verdict = "GOOD WORK. Keep pushing!"
+                elif percentage >= 50:
+                    verdict = "Room for improvement. Tomorrow we go harder."
+                else:
+                    verdict = "UNACCEPTABLE. Tomorrow, NO EXCUSES."
+
+                await whatsapp_service.send_template_message(
+                    notification_settings["whatsapp_number"],
+                    "evening_summary",
+                    completed=completed_count,
+                    total=total_goals,
+                    percentage=percentage,
+                    water_glasses=yesterday_water,
+                    steps=current_steps,
+                    verdict=verdict
+                )
+                logger.info("WhatsApp evening summary sent")
+            except Exception as wa_err:
+                logger.error(f"WhatsApp evening summary error: {wa_err}")
 
         # ═══════════════════════════════════════════════════════════════
         # RESET DAILY GOALS FROM TEMPLATE (with current=0 for trackable goals)
