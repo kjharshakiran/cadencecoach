@@ -17,6 +17,7 @@ from google.adk.sessions import DatabaseSessionService
 from starlette.middleware.sessions import SessionMiddleware
 from authlib.integrations.starlette_client import OAuth
 import httpx
+import hashlib
 
 # Import the new architecture
 from spartan_phalanx.main import THE_SPARTAN
@@ -83,9 +84,28 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["*"],   
     allow_headers=["*"],
 )
+
+# Simple local user store (username -> hashed_password)
+USERS_FILE = "users.json"
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+
+def load_users() -> Dict[str, str]:
+    if os.path.exists(USERS_FILE):
+        try:
+            with open(USERS_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+def save_users(users: Dict[str, str]) -> None:
+    with open(USERS_FILE, "w") as f:
+        json.dump(users, f)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -416,6 +436,10 @@ LOGIN_PAGE_HTML = """
                 gap: 8px;
             }
         }
+        /* Ensure the signup form is hidden by default and links look clickable */
+        .hidden { display: none !important; }
+        .toggle-link { color: var(--accent-color); cursor: pointer; text-decoration: underline; }
+
     </style>
 </head>
 <body>
@@ -428,7 +452,8 @@ LOGIN_PAGE_HTML = """
 
         __ERROR_HTML__
 
-        <form method="POST" action="/auth/login">
+        <!-- LOGIN FORM -->
+        <form id="login-form" method="POST" action="/auth/login">
             <div class="form-group">
                 <label for="username">Username</label>
                 <input type="text" id="username" name="username" placeholder="Enter your username" required>
@@ -438,6 +463,25 @@ LOGIN_PAGE_HTML = """
                 <input type="password" id="password" name="password" placeholder="Enter your password" required>
             </div>
             <button type="submit" class="btn btn-primary">Enter the Arena</button>
+            <div style="margin-top:8px;" class="small">Don't have an account? <span id="show-signup" class="toggle-link">Sign up</span></div>
+        </form>
+
+        <!-- SIGNUP FORM (hidden by default) -->
+        <form id="signup-form" class="hidden" method="POST" action="/auth/signup" style="margin-top:12px;">
+            <div class="form-group">
+                <label for="su_username">Choose a username</label>
+                <input type="text" id="su_username" name="username" placeholder="Pick a username" required>
+            </div>
+            <div class="form-group">
+                <label for="su_password">Password</label>
+                <input type="password" id="su_password" name="password" placeholder="Create a password" required>
+            </div>
+            <div class="form-group">
+                <label for="su_password_confirm">Re-enter Password</label>
+                <input type="password" id="su_password_confirm" name="password_confirm" placeholder="Re-enter password" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Create Account & Login</button>
+            <div style="margin-top:8px;" class="small">Already have an account? <span id="show-login" class="toggle-link">Log in</span></div>
         </form>
 
         __GOOGLE_BTN__
@@ -451,6 +495,40 @@ LOGIN_PAGE_HTML = """
             </div>
         </div>
     </div>
+    <script>
+      // Toggle between login and signup and simple client-side checks
+      document.addEventListener('DOMContentLoaded', function () {
+        const loginForm = document.getElementById('login-form');
+        const signupForm = document.getElementById('signup-form');
+        const showSignup = document.getElementById('show-signup');
+        const showLogin = document.getElementById('show-login');
+
+        if (showSignup) showSignup.addEventListener('click', () => {
+          loginForm.classList.add('hidden');
+          signupForm.classList.remove('hidden');
+        });
+        if (showLogin) showLogin.addEventListener('click', () => {
+          signupForm.classList.add('hidden');
+          loginForm.classList.remove('hidden');
+        });
+
+        // Simple client-side password match check for signup
+        signupForm && signupForm.addEventListener('submit', (e) => {
+          const p = document.getElementById('su_password').value;
+          const pc = document.getElementById('su_password_confirm').value;
+          if (p !== pc) {
+            e.preventDefault();
+            alert('Passwords do not match');
+            return false;
+          }
+          if (p.length < 6) {
+            e.preventDefault();
+            alert('Password must be at least 6 characters');
+            return false;
+          }
+        });
+      });
+    </script>
 </body>
 </html>
 """
@@ -488,10 +566,55 @@ async def read_root(request: Request):
         return RedirectResponse(url="/login", status_code=302)
     return FileResponse('static/index.html')
 
+@app.post("/auth/signup")
+async def signup(request: Request, username: str = Form(...), password: str = Form(...), password_confirm: str = Form(...)):
+    """Handle simple signup and auto-login."""
+    if password != password_confirm:
+        return RedirectResponse(url="/login?error=Passwords+do+not+match", status_code=302)
+    if len(password) < 6:
+        return RedirectResponse(url="/login?error=Password+must+be+6+chars+or+more", status_code=302)
+
+    users = load_users()
+    uname = username.strip()
+    if not uname:
+        return RedirectResponse(url="/login?error=Username+required", status_code=302)
+
+    if uname in users or uname == DEFAULT_USERNAME:
+        return RedirectResponse(url="/login?error=Username+already+taken", status_code=302)
+
+    users[uname] = hash_password(password)
+    save_users(users)
+
+    # Auto-login the new user
+    request.session["user"] = {
+        "username": uname,
+        "name": uname,
+        "email": f"{uname}@spartancoach.local",
+        "auth_method": "password"
+    }
+    logger.info(f"New user {uname} signed up and logged in")
+    return RedirectResponse(url="/", status_code=302)
+
 # --- Authentication Endpoints ---
 @app.post("/auth/login")
 async def login(request: Request, username: str = Form(...), password: str = Form(...)):
     """Handle username/password login."""
+    users = load_users()
+    uname = username.strip()
+    hashed = hash_password(password)
+
+    # Check registered users first
+    if uname in users and users.get(uname) == hashed:
+        request.session["user"] = {
+            "username": uname,
+            "name": uname,
+            "email": f"{uname}@spartancoach.local",
+            "auth_method": "password"
+        }
+        logger.info(f"User {uname} logged in via password")
+        return RedirectResponse(url="/", status_code=302)
+
+    # Fallback to default demo credentials (unchanged)
     if username == DEFAULT_USERNAME and password == DEFAULT_PASSWORD:
         request.session["user"] = {
             "username": username,
@@ -499,7 +622,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
             "email": f"{username}@spartancoach.local",
             "auth_method": "password"
         }
-        logger.info(f"User {username} logged in via password")
+        logger.info(f"User {username} logged in via default password")
         return RedirectResponse(url="/", status_code=302)
 
     return RedirectResponse(url="/login?error=Invalid+username+or+password", status_code=302)
@@ -576,8 +699,9 @@ async def whoop_callback(request: Request, code: str = None, state: str = None, 
         tokens = await WhoopService.exchange_code_for_token(code)
 
         # Get session ID and store tokens
-        session_id = get_or_create_session_id()
-        session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+        user_id = get_user_id(request)
+        session_id = get_or_create_session_id(user_id)
+        session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
         state = session.state
 
         state["whoop_connected"] = True
@@ -618,8 +742,9 @@ async def whoop_callback(request: Request, code: str = None, state: str = None, 
 @app.post("/auth/whoop/disconnect")
 async def whoop_disconnect(request: Request):
     """Disconnect Whoop integration."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     state["whoop_connected"] = False
@@ -638,8 +763,9 @@ async def whoop_disconnect(request: Request):
 @app.get("/api/whoop/status")
 async def whoop_status(request: Request):
     """Get Whoop connection status."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     return {
@@ -651,8 +777,9 @@ async def whoop_status(request: Request):
 @app.get("/api/whoop/summary")
 async def whoop_summary(request: Request):
     """Get today's Whoop summary (recovery, strain, sleep)."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     if not state.get("whoop_connected"):
@@ -683,8 +810,9 @@ async def whoop_summary(request: Request):
 @app.get("/api/whoop/recovery")
 async def whoop_recovery(request: Request):
     """Get latest recovery data."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     if not state.get("whoop_connected"):
@@ -708,8 +836,9 @@ async def whoop_recovery(request: Request):
 @app.post("/api/whoop/verify-workout")
 async def verify_workout(request: Request, intensity: str = "high"):
     """Verify user's workout claim against Whoop data (Discrepancy Detection)."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     if not state.get("whoop_connected"):
@@ -737,8 +866,9 @@ async def verify_workout(request: Request, intensity: str = "high"):
 @app.post("/api/whoop/verify-sleep")
 async def verify_sleep(request: Request, hours_claimed: float):
     """Verify user's sleep claim against Whoop data."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     if not state.get("whoop_connected"):
@@ -766,8 +896,9 @@ async def verify_sleep(request: Request, hours_claimed: float):
 @app.get("/api/whoop/training-readiness")
 async def training_readiness(request: Request):
     """Check if user should train hard today based on recovery."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     if not state.get("whoop_connected"):
@@ -795,8 +926,9 @@ async def training_readiness(request: Request):
 @app.get("/api/whoop/accountability-report")
 async def accountability_report(request: Request):
     """Get full accountability report comparing behavior to Whoop data."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     if not state.get("whoop_connected"):
@@ -830,8 +962,9 @@ class WhatsAppConnectRequest(BaseModel):
 @app.get("/api/whatsapp/status")
 async def whatsapp_status_endpoint(request: Request):
     """Get WhatsApp connection status."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     notification_settings = state.get("notification_settings", {})
@@ -846,8 +979,9 @@ async def whatsapp_status_endpoint(request: Request):
 @app.post("/api/whatsapp/connect")
 async def whatsapp_connect(request: Request, data: WhatsAppConnectRequest):
     """Connect user's WhatsApp number and send verification message."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     phone_number = data.phone_number.strip()
@@ -894,8 +1028,9 @@ async def whatsapp_connect(request: Request, data: WhatsAppConnectRequest):
 @app.post("/api/whatsapp/disconnect")
 async def whatsapp_disconnect(request: Request):
     """Disconnect WhatsApp integration."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     notification_settings = state.get("notification_settings", {})
@@ -911,8 +1046,9 @@ async def whatsapp_disconnect(request: Request):
 @app.post("/api/whatsapp/toggle")
 async def whatsapp_toggle(request: Request, enabled: bool):
     """Enable/disable WhatsApp notifications without disconnecting."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     notification_settings = state.get("notification_settings", {})
@@ -934,8 +1070,9 @@ async def whatsapp_toggle(request: Request, enabled: bool):
 @app.post("/api/whatsapp/send-test")
 async def whatsapp_send_test(request: Request):
     """Send a test message to verify the connection."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     notification_settings = state.get("notification_settings", {})
@@ -954,8 +1091,9 @@ async def whatsapp_send_test(request: Request):
 @app.post("/api/whatsapp/send")
 async def whatsapp_send_custom(request: Request, message: str):
     """Send a custom message (for testing/admin purposes)."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     notification_settings = state.get("notification_settings", {})
@@ -986,8 +1124,9 @@ async def whatsapp_webhook(
 
     # Find the session with this phone number
     # For now, we use the default session (single user mode)
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     # Verify this phone number is connected
@@ -1018,7 +1157,7 @@ async def whatsapp_webhook(
         final_response_text = ""
 
         async for event in runner.run_async(
-            user_id=USER_ID,
+            user_id=user_id,
             session_id=session_id,
             new_message=content
         ):
@@ -1110,7 +1249,20 @@ logger.info(f"Using database: {'Cloud SQL' if 'postgresql' in db_url else 'SQLit
 session_service = DatabaseSessionService(db_url=db_url)
 
 APP_NAME = "SpartanCoach"
-USER_ID = "Alex"  # Default user for this demo
+
+def get_user_id(request: Request) -> str:
+    """Get user ID from logged-in user session."""
+    user = get_current_user(request)
+    if user:
+        return user.get("username", "anonymous")
+    return "anonymous"
+
+def get_user_id_required(request: Request) -> str:
+    """Dependency that requires auth and returns user_id."""
+    user = get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return user.get("username", "anonymous")
 
 # Default daily goals template (used for new sessions and before plan acceptance)
 DEFAULT_GOALS_TEMPLATE = [
@@ -1186,14 +1338,15 @@ class HistoryEntry(BaseModel):
     recovery: Optional[int] = None
     completion_rate: int = 0
 
-def get_or_create_session_id():
+def get_or_create_session_id(user_id: str):
+    """Get or create a session for the given user."""
     existing_sessions = session_service.list_sessions(
         app_name=APP_NAME,
-        user_id=USER_ID,
+        user_id=user_id,
     )
     if existing_sessions and len(existing_sessions.sessions) > 0:
         return existing_sessions.sessions[0].id
-    
+
     # Initial state with enhanced schema for proactive coaching
     initial_state = {
         "user_name": "",
@@ -1234,21 +1387,34 @@ def get_or_create_session_id():
     }
     new_session = session_service.create_session(
         app_name=APP_NAME,
-        user_id=USER_ID,
+        user_id=user_id,
         state=initial_state,
     )
     return new_session.id
 
-@app.post("/api/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
-    session_id = get_or_create_session_id()
+
+def get_all_registered_users() -> list:
+    """Get all registered users from the database for scheduled tasks."""
     try:
-        content = types.Content(role="user", parts=[types.Part(text=request.message)])
+        engine = sqlalchemy.create_engine(db_url)
+        with engine.connect() as conn:
+            result = conn.execute(text("SELECT DISTINCT username FROM registered_users"))
+            return [row[0] for row in result.fetchall()]
+    except Exception as e:
+        logger.error(f"Error getting registered users: {e}")
+        return []
+
+
+@app.post("/api/chat", response_model=ChatResponse)
+async def chat(chat_request: ChatRequest, user_id: str = Depends(get_user_id_required)):
+    session_id = get_or_create_session_id(user_id)
+    try:
+        content = types.Content(role="user", parts=[types.Part(text=chat_request.message)])
         final_response_text = ""
 
         # Run the agent asynchronously
         async for event in runner.run_async(
-            user_id=USER_ID,
+            user_id=user_id,
             session_id=session_id,
             new_message=content
         ):
@@ -1262,7 +1428,7 @@ async def chat(request: ChatRequest):
                     final_response_text = event.content.parts[0].text.strip()
 
         # Log the interaction
-        log_agent_interaction(session_id, request.message, final_response_text)
+        log_agent_interaction(session_id, chat_request.message, final_response_text)
 
         # NOTE: Daily plan is NOT overwritten from chat responses.
         # The comprehensive daily plan is only generated once per day via:
@@ -1271,7 +1437,7 @@ async def chat(request: ChatRequest):
         # When user asks about daily plan in chat, agent should RETRIEVE existing plan.
 
         # Get plan_accepted status to return to frontend
-        session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+        session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
         state = session.state
         plan_accepted = state.get("plan_accepted", False)
 
@@ -1297,21 +1463,22 @@ def force_update_state(session_id: str, new_state: Dict[str, Any]):
         conn.commit()
 
 @app.post("/api/onboard")
-async def onboard(request: OnboardRequest):
-    session_id = get_or_create_session_id()
+async def onboard(request: Request, onboard_data: OnboardRequest):
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
     
 
     # Directly update session state with profile and lock it
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     current_state = session.state
     current_state["warrior_profile"] = {
-        "name": request.name,
-        "age": request.age,
-        "height": request.height,
-        "weight": request.weight,
-        "goal": request.goal,
-        "target_date": request.target_date,
-        "reason": request.reason
+        "name": onboard_data.name,
+        "age": onboard_data.age,
+        "height": onboard_data.height,
+        "weight": onboard_data.weight,
+        "goal": onboard_data.goal,
+        "target_date": onboard_data.target_date,
+        "reason": onboard_data.reason
     }
     current_state["profile_locked"] = True
     # Force update the database
@@ -1320,9 +1487,9 @@ async def onboard(request: OnboardRequest):
     # Now ask the agent to create the Master Plan
     profile_text = (
         f"I have completed my profile setup. Here are my details:\n"
-        f"Name: {request.name}, Age: {request.age}, Height: {request.height}cm, "
-        f"Weight: {request.weight}lbs, Goal: {request.goal}, Target Date: {request.target_date}\n"
-        f"My WHY (reason for this goal): {request.reason}\n\n"
+        f"Name: {onboard_data.name}, Age: {onboard_data.age}, Height: {onboard_data.height}cm, "
+        f"Weight: {onboard_data.weight}lbs, Goal: {onboard_data.goal}, Target Date: {onboard_data.target_date}\n"
+        f"My WHY (reason for this goal): {onboard_data.reason}\n\n"
         f"Please create my Master Plan."
     )
     
@@ -1330,7 +1497,7 @@ async def onboard(request: OnboardRequest):
     final_response_text = ""
     
     async for event in runner.run_async(
-        user_id=USER_ID, 
+        user_id=user_id, 
         session_id=session_id, 
         new_message=content
     ):
@@ -1340,11 +1507,11 @@ async def onboard(request: OnboardRequest):
 
     # Save the master plan to session state
     # Extract the plan from the response and store it
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     current_state = session.state
     current_state["master_plan"] = {
         "plan_text": final_response_text,
-        "created_at": request.target_date,
+        "created_at": onboard_data.target_date,
         "status": "pending_confirmation"
     }
 
@@ -1382,16 +1549,18 @@ async def onboard(request: OnboardRequest):
 # ... (extract_metrics_from_response and upload_image remain same)
 
 @app.post("/api/reset")
-def reset_session():
+def reset_session(request: Request):
+    """Reset the current user's session data."""
+    user_id = get_user_id(request)
     # Delete via session service
     existing_sessions = session_service.list_sessions(
         app_name=APP_NAME,
-        user_id=USER_ID,
+        user_id=user_id,
     )
     for s in existing_sessions.sessions:
         session_service.delete_session(
             app_name=APP_NAME,
-            user_id=USER_ID,
+            user_id=user_id,
             session_id=s.id
         )
 
@@ -1399,7 +1568,7 @@ def reset_session():
     engine = sqlalchemy.create_engine(db_url)
     with engine.connect() as conn:
         conn.execute(text("DELETE FROM sessions WHERE app_name = :app AND user_id = :user"),
-                     {"app": APP_NAME, "user": USER_ID})
+                     {"app": APP_NAME, "user": user_id})
         conn.commit()
 
     return {"message": "Session reset. PREPARE FOR GLORY!"}
@@ -1414,9 +1583,10 @@ async def manual_daily_reset():
 
 
 @app.get("/api/state", response_model=StateResponse)
-async def get_state():
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+async def get_state(request: Request):
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
     return StateResponse(
         user_name=state.get("user_name", ""),
@@ -1428,10 +1598,11 @@ async def get_state():
     )
 
 @app.post("/api/accept-plan")
-async def accept_plan():
+async def accept_plan(request: Request):
     """Accept the master plan, generate daily plan, and initialize daily goals."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     if not state.get("master_plan"):
@@ -1475,7 +1646,7 @@ async def accept_plan():
         daily_plan_text = ""
 
         async for event in runner.run_async(
-            user_id=USER_ID,
+            user_id=user_id,
             session_id=session_id,
             new_message=content
         ):
@@ -1484,7 +1655,7 @@ async def accept_plan():
                     daily_plan_text = event.content.parts[0].text.strip()
 
         # Save the daily plan
-        session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+        session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
         state = session.state
         state["daily_plan"]["plan_text"] = daily_plan_text
         force_update_state(session_id, state)
@@ -1497,10 +1668,11 @@ async def accept_plan():
     return {"message": "Plan accepted! Your transformation begins.", "plan_accepted": True}
 
 @app.get("/api/daily-goals", response_model=DailyGoalsResponse)
-async def get_daily_goals():
+async def get_daily_goals(request: Request):
     """Get today's daily goals with completion status."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     goals = state.get("daily_goals", [])
@@ -1551,10 +1723,11 @@ async def get_daily_goals():
     )
 
 @app.post("/api/goals/check")
-async def check_goal(request: GoalCheckRequest):
+async def check_goal(request: Request, goal_data: GoalCheckRequest):
     """Mark a daily goal as completed."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     goals = state.get("daily_goals", [])
@@ -1571,7 +1744,7 @@ async def check_goal(request: GoalCheckRequest):
     goal_found = False
 
     for goal in goals:
-        if goal["id"] == request.goal_id:
+        if goal["id"] == goal_data.goal_id:
             goal["completed"] = True
             goal_found = True
 
@@ -1599,23 +1772,24 @@ async def check_goal(request: GoalCheckRequest):
             break
 
     if not goal_found:
-        raise HTTPException(status_code=404, detail=f"Goal '{request.goal_id}' not found")
+        raise HTTPException(status_code=404, detail=f"Goal '{goal_data.goal_id}' not found")
 
     state["daily_goals"] = goals
     force_update_state(session_id, state)
 
     completed = sum(1 for g in goals if g.get("completed", False))
     return {
-        "message": f"Goal '{request.goal_id}' checked off!",
+        "message": f"Goal '{goal_data.goal_id}' checked off!",
         "completed_count": completed,
         "total_count": len(goals)
     }
 
 @app.post("/api/goals/uncheck")
-async def uncheck_goal(request: GoalCheckRequest):
+async def uncheck_goal(request: Request, goal_data: GoalCheckRequest):
     """Unmark a daily goal."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     goals = state.get("daily_goals", [])
@@ -1630,20 +1804,21 @@ async def uncheck_goal(request: GoalCheckRequest):
         ]
 
     for goal in goals:
-        if goal["id"] == request.goal_id:
+        if goal["id"] == goal_data.goal_id:
             goal["completed"] = False
             break
 
     state["daily_goals"] = goals
     force_update_state(session_id, state)
 
-    return {"message": f"Goal '{request.goal_id}' unchecked."}
+    return {"message": f"Goal '{goal_data.goal_id}' unchecked."}
 
 @app.post("/api/metrics")
-async def save_metrics(request: MetricsRequest):
+async def save_metrics(request: Request, metrics_data: MetricsRequest):
     """Save daily metrics (weight, sleep, recovery)."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     today = datetime.now().strftime("%Y-%m-%d")
@@ -1654,12 +1829,12 @@ async def save_metrics(request: MetricsRequest):
         daily_metrics[today] = {}
 
     # Update metrics
-    if request.weight is not None:
-        daily_metrics[today]["weight"] = request.weight
-    if request.sleep is not None:
-        daily_metrics[today]["sleep"] = request.sleep
-    if request.recovery is not None:
-        daily_metrics[today]["recovery"] = request.recovery
+    if metrics_data.weight is not None:
+        daily_metrics[today]["weight"] = metrics_data.weight
+    if metrics_data.sleep is not None:
+        daily_metrics[today]["sleep"] = metrics_data.sleep
+    if metrics_data.recovery is not None:
+        daily_metrics[today]["recovery"] = metrics_data.recovery
 
     state["daily_metrics"] = daily_metrics
     force_update_state(session_id, state)
@@ -1667,10 +1842,11 @@ async def save_metrics(request: MetricsRequest):
     return {"message": "Metrics logged! Keep pushing, warrior!", "date": today}
 
 @app.get("/api/metrics/today", response_model=MetricsResponse)
-async def get_today_metrics():
+async def get_today_metrics(request: Request):
     """Get today's metrics."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     today = datetime.now().strftime("%Y-%m-%d")
@@ -1685,10 +1861,11 @@ async def get_today_metrics():
     )
 
 @app.get("/api/history", response_model=List[HistoryEntry])
-async def get_history():
+async def get_history(request: Request):
     """Get historical data for charts (last 30 days)."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     daily_metrics = state.get("daily_metrics", {})
@@ -1728,10 +1905,11 @@ async def get_history():
     return history
 
 @app.get("/api/daily-plan")
-async def get_daily_plan():
+async def get_daily_plan(request: Request):
     """Get the current daily plan (specific workout/meals for today)."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     daily_plan = state.get("daily_plan", {})
@@ -1746,10 +1924,11 @@ async def get_daily_plan():
     raise HTTPException(status_code=404, detail="No daily plan available. Ask the coach for today's plan!")
 
 @app.get("/api/master-plan")
-async def get_master_plan():
+async def get_master_plan(request: Request):
     """Get the master transformation plan."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     master_plan = state.get("master_plan", {})
@@ -1768,8 +1947,9 @@ async def simulate_journey():
     import random
     from datetime import timedelta
 
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     # Get goal details
@@ -1853,10 +2033,11 @@ async def simulate_journey():
     }
 
 @app.post("/api/complete-goal")
-async def complete_goal():
+async def complete_goal(request: Request):
     """Mark the goal as accomplished and generate summary."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     profile = state.get("warrior_profile", {})
@@ -1902,10 +2083,11 @@ async def complete_goal():
     }
 
 @app.get("/api/journey-status")
-async def get_journey_status():
+async def get_journey_status(request: Request):
     """Get current journey status including completion."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     profile = state.get("warrior_profile", {})
@@ -1944,10 +2126,11 @@ async def get_journey_status():
 # ═══════════════════════════════════════════════════════════════
 
 @app.post("/api/water/log")
-async def log_water():
+async def log_water(request: Request):
     """Log a glass of water (+1)."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     today = datetime.now().strftime("%Y-%m-%d")
@@ -1990,10 +2173,11 @@ async def log_water():
 
 
 @app.get("/api/water/status")
-async def get_water_status():
+async def get_water_status(request: Request):
     """Get current water intake status."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     today = datetime.now().strftime("%Y-%m-%d")
@@ -2041,10 +2225,11 @@ class StepLogRequest(BaseModel):
 
 
 @app.post("/api/steps/log")
-async def log_steps(request: StepLogRequest):
+async def log_steps(request: Request, step_data: StepLogRequest):
     """Log step count (manual entry)."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     today = datetime.now().strftime("%Y-%m-%d")
@@ -2053,7 +2238,7 @@ async def log_steps(request: StepLogRequest):
     if today not in daily_metrics:
         daily_metrics[today] = {}
 
-    daily_metrics[today]["steps"] = request.steps
+    daily_metrics[today]["steps"] = step_data.steps
     daily_metrics[today]["steps_logged_at"] = datetime.now().isoformat()
     state["daily_metrics"] = daily_metrics
 
@@ -2061,8 +2246,8 @@ async def log_steps(request: StepLogRequest):
     goals = state.get("daily_goals", [])
     for goal in goals:
         if goal.get("id") == "walking":
-            goal["current"] = request.steps
-            if request.steps >= goal.get("target", 10000):
+            goal["current"] = step_data.steps
+            if step_data.steps >= goal.get("target", 10000):
                 goal["completed"] = True
             break
     state["daily_goals"] = goals
@@ -2073,10 +2258,10 @@ async def log_steps(request: StepLogRequest):
     fitness_targets = state.get("fitness_targets", {})
     target = fitness_targets.get("daily_steps", 10000)
 
-    remaining = max(0, target - request.steps)
-    progress_percent = min(100, round((request.steps / target) * 100))
+    remaining = max(0, target - step_data.steps)
+    progress_percent = min(100, round((step_data.steps / target) * 100))
 
-    if request.steps >= target:
+    if step_data.steps >= target:
         message = f"{target:,} STEPS CONQUERED! OUTSTANDING WORK, WARRIOR!"
     elif progress_percent >= 75:
         message = f"SOLID PROGRESS! {remaining:,} steps to go. FINISH STRONG!"
@@ -2087,19 +2272,20 @@ async def log_steps(request: StepLogRequest):
 
     return {
         "message": message,
-        "steps": request.steps,
+        "steps": step_data.steps,
         "target": target,
         "remaining": remaining,
         "progress_percent": progress_percent,
-        "completed": request.steps >= target
+        "completed": step_data.steps >= target
     }
 
 
 @app.get("/api/steps/status")
-async def get_steps_status():
+async def get_steps_status(request: Request):
     """Get current step count status."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     today = datetime.now().strftime("%Y-%m-%d")
@@ -2177,10 +2363,11 @@ async def get_steps_status():
 # ═══════════════════════════════════════════════════════════════
 
 @app.post("/api/calendar/sync")
-async def sync_calendar():
+async def sync_calendar(request: Request):
     """Sync calendar and find available gaps for workouts."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     calendar_token = state.get("google_calendar_token")
@@ -2256,10 +2443,11 @@ async def sync_calendar():
 
 
 @app.get("/api/calendar/gaps")
-async def get_calendar_gaps():
+async def get_calendar_gaps(request: Request):
     """Get today's available time gaps with workout suggestions."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     gaps = state.get("calendar_gaps", [])
@@ -2309,10 +2497,11 @@ class PushSubscription(BaseModel):
 
 
 @app.post("/api/push/subscribe")
-async def subscribe_push(subscription: PushSubscription):
+async def subscribe_push(request: Request, subscription: PushSubscription):
     """Store push notification subscription."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     state["push_subscription"] = subscription.dict()
@@ -2322,10 +2511,11 @@ async def subscribe_push(subscription: PushSubscription):
 
 
 @app.get("/api/notifications")
-async def get_notifications():
+async def get_notifications(request: Request):
     """Get pending notifications/reminders."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     reminders = state.get("pending_reminders", [])
@@ -2337,10 +2527,11 @@ async def get_notifications():
 
 
 @app.post("/api/notifications/clear")
-async def clear_notifications():
+async def clear_notifications(request: Request):
     """Clear all pending notifications."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     state["pending_reminders"] = []
@@ -2356,10 +2547,11 @@ class NotificationSettings(BaseModel):
 
 
 @app.post("/api/notifications/settings")
-async def update_notification_settings(settings: NotificationSettings):
+async def update_notification_settings(request: Request, settings: NotificationSettings):
     """Update notification settings."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     current_settings = state.get("notification_settings", {
@@ -2382,10 +2574,11 @@ async def update_notification_settings(settings: NotificationSettings):
 
 
 @app.get("/api/notifications/settings")
-async def get_notification_settings():
+async def get_notification_settings(request: Request):
     """Get current notification settings."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     return state.get("notification_settings", {
@@ -2400,10 +2593,11 @@ async def get_notification_settings():
 # ═══════════════════════════════════════════════════════════════
 
 @app.get("/api/urgency")
-async def get_urgency_status():
+async def get_urgency_status(request: Request):
     """Get current urgency level and factors."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     # Calculate urgency based on multiple factors
@@ -2595,21 +2789,32 @@ def parse_daily_schedule(daily_plan_text: str) -> list:
 
 async def proactive_checkin():
     """
-    AGGRESSIVE proactive check-in triggered every 2 hours.
+    AGGRESSIVE proactive check-in triggered every 2 hours for ALL users.
     Syncs calendar, evaluates goals, and generates commanding reminders.
-    Includes user's personal motivation (reason) for powerful messaging.
     """
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    logger.info("Running proactive check-in for all users")
+    users = get_all_registered_users()
+
+    for user_id in users:
+        try:
+            await _proactive_checkin_for_user(user_id)
+        except Exception as e:
+            logger.error(f"Error in proactive check-in for user {user_id}: {e}")
+
+
+async def _proactive_checkin_for_user(user_id: str):
+    """Proactive check-in for a single user."""
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     if not state.get("plan_accepted"):
-        logger.info("Plan not accepted yet, skipping proactive check-in.")
+        logger.debug(f"User {user_id}: Plan not accepted, skipping check-in.")
         return
 
     now = datetime.now()
     current_hour = now.hour
-    logger.info(f"Executing proactive check-in at {now.strftime('%H:%M')} for session {session_id}")
+    logger.info(f"Executing proactive check-in at {now.strftime('%H:%M')} for user {user_id}")
 
     # Get user's motivation (reason) for personalized messaging
     warrior_profile = state.get("warrior_profile", {})
@@ -2770,12 +2975,12 @@ YOUR ORDERS: Based on the status above, issue COMMANDING orders to {user_name}.
     final_response_text = ""
 
     try:
-        async for event in runner.run_async(user_id=USER_ID, session_id=session_id, new_message=content):
+        async for event in runner.run_async(user_id=user_id, session_id=session_id, new_message=content):
             if event.is_final_response() and event.content and event.content.parts:
                 final_response_text = event.content.parts[0].text.strip()
 
         # Store as pending reminder
-        session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+        session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
         state = session.state
         reminders = state.get("pending_reminders", [])
         reminders.append({
@@ -2814,9 +3019,21 @@ YOUR ORDERS: Based on the status above, issue COMMANDING orders to {user_name}.
 
 
 async def water_reminder():
-    """Check water intake and send reminder if needed."""
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    """Check water intake and send reminder if needed for ALL users."""
+    logger.info("Running water reminder for all users")
+    users = get_all_registered_users()
+
+    for user_id in users:
+        try:
+            await _water_reminder_for_user(user_id)
+        except Exception as e:
+            logger.error(f"Error in water reminder for user {user_id}: {e}")
+
+
+async def _water_reminder_for_user(user_id: str):
+    """Water reminder for a single user."""
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     if not state.get("plan_accepted"):
@@ -2878,12 +3095,21 @@ async def water_reminder():
 
 
 async def schedule_reminder():
-    """
-    Check for upcoming scheduled items from the daily plan and send reminders.
-    Runs every 15 minutes to catch upcoming meals, workouts, etc.
-    """
-    session_id = get_or_create_session_id()
-    session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+    """Check for upcoming scheduled items for ALL users."""
+    logger.info("Running schedule reminder for all users")
+    users = get_all_registered_users()
+
+    for user_id in users:
+        try:
+            await _schedule_reminder_for_user(user_id)
+        except Exception as e:
+            logger.error(f"Error in schedule reminder for user {user_id}: {e}")
+
+
+async def _schedule_reminder_for_user(user_id: str):
+    """Schedule reminder for a single user."""
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
     if not state.get("plan_accepted"):
@@ -3006,19 +3232,31 @@ async def scheduled_checkin():
     await proactive_checkin()
 
 async def midnight_reset():
-    """Reset daily goals at midnight and archive previous day's progress."""
+    """Reset daily goals at midnight and archive previous day's progress for ALL users."""
     logger.info("=" * 60)
     logger.info("MIDNIGHT RESET TRIGGERED")
     logger.info("=" * 60)
 
-    try:
-        session_id = get_or_create_session_id()
-        session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
-        state = session.state
+    users = get_all_registered_users()
+    logger.info(f"Processing midnight reset for {len(users)} users")
 
-        if not state.get("plan_accepted"):
-            logger.info("Plan not accepted yet, skipping midnight reset.")
-            return
+    for user_id in users:
+        try:
+            session_id = get_or_create_session_id(user_id)
+            session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
+            state = session.state
+
+            if not state.get("plan_accepted"):
+                logger.info(f"User {user_id}: Plan not accepted, skipping.")
+                continue
+
+            await _reset_user_daily(user_id, session_id, state)
+        except Exception as e:
+            logger.error(f"Error resetting user {user_id}: {e}")
+
+async def _reset_user_daily(user_id: str, session_id: str, state: dict):
+    """Reset a single user's daily data."""
+    try:
 
         # Archive previous day's goals and metrics
         from datetime import timedelta
@@ -3169,7 +3407,7 @@ async def midnight_reset():
             daily_plan_text = ""
 
             async for event in runner.run_async(
-                user_id=USER_ID,
+                user_id=user_id,
                 session_id=session_id,
                 new_message=content
             ):
@@ -3178,7 +3416,7 @@ async def midnight_reset():
                         daily_plan_text = event.content.parts[0].text.strip()
 
             # Save the new daily plan and parse schedule
-            session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
+            session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
             state = session.state
             state["daily_plan"]["plan_text"] = daily_plan_text
 
@@ -3250,49 +3488,51 @@ async def start_scheduler():
     # MORNING CALENDAR SYNC (7:05 AM)
     # ═══════════════════════════════════════════════════════════════
     async def morning_calendar_sync():
-        """Sync calendar at start of day."""
-        try:
-            session_id = get_or_create_session_id()
-            session = session_service.get_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id)
-            state = session.state
+        """Sync calendar at start of day for ALL users."""
+        logger.info("Running morning calendar sync for all users")
+        users = get_all_registered_users()
 
-            if state.get("plan_accepted"):
-                # Trigger calendar sync
-                now = datetime.now()
-                notification_settings = state.get("notification_settings", {})
-                wake_time = notification_settings.get("wake_time", "07:00")
-                sleep_time = notification_settings.get("sleep_time", "22:00")
+        for user_id in users:
+            try:
+                session_id = get_or_create_session_id(user_id)
+                session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
+                state = session.state
 
-                # Generate estimated gaps if no calendar connected
-                mock_gaps = [
-                    {
-                        "start": now.replace(hour=7, minute=0, second=0).isoformat(),
-                        "end": now.replace(hour=9, minute=0, second=0).isoformat(),
-                        "duration_minutes": 120,
-                        "time_of_day": "morning",
-                        "next_event": "Work"
-                    },
-                    {
-                        "start": now.replace(hour=12, minute=0, second=0).isoformat(),
-                        "end": now.replace(hour=13, minute=0, second=0).isoformat(),
-                        "duration_minutes": 60,
-                        "time_of_day": "afternoon",
-                        "next_event": "Afternoon work"
-                    },
-                    {
-                        "start": now.replace(hour=18, minute=0, second=0).isoformat(),
-                        "end": now.replace(hour=22, minute=0, second=0).isoformat(),
-                        "duration_minutes": 240,
-                        "time_of_day": "evening",
-                        "next_event": "End of day"
-                    }
-                ]
-                state["calendar_gaps"] = mock_gaps
-                state["calendar_last_sync"] = now.isoformat()
-                force_update_state(session_id, state)
-                logger.info("Morning calendar sync complete.")
-        except Exception as e:
-            logger.error(f"Error during morning calendar sync: {e}")
+                if state.get("plan_accepted"):
+                    # Trigger calendar sync
+                    now = datetime.now()
+                    notification_settings = state.get("notification_settings", {})
+
+                    # Generate estimated gaps if no calendar connected
+                    mock_gaps = [
+                        {
+                            "start": now.replace(hour=7, minute=0, second=0).isoformat(),
+                            "end": now.replace(hour=9, minute=0, second=0).isoformat(),
+                            "duration_minutes": 120,
+                            "time_of_day": "morning",
+                            "next_event": "Work"
+                        },
+                        {
+                            "start": now.replace(hour=12, minute=0, second=0).isoformat(),
+                            "end": now.replace(hour=13, minute=0, second=0).isoformat(),
+                            "duration_minutes": 60,
+                            "time_of_day": "afternoon",
+                            "next_event": "Afternoon work"
+                        },
+                        {
+                            "start": now.replace(hour=18, minute=0, second=0).isoformat(),
+                            "end": now.replace(hour=22, minute=0, second=0).isoformat(),
+                            "duration_minutes": 240,
+                            "time_of_day": "evening",
+                            "next_event": "End of day"
+                        }
+                    ]
+                    state["calendar_gaps"] = mock_gaps
+                    state["calendar_last_sync"] = now.isoformat()
+                    force_update_state(session_id, state)
+                    logger.info(f"Morning calendar sync complete for user {user_id}")
+            except Exception as e:
+                logger.error(f"Error during morning calendar sync for user {user_id}: {e}")
 
     scheduler.add_job(morning_calendar_sync, 'cron', hour=7, minute=5, id='morning_sync')
 
