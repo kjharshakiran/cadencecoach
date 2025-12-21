@@ -97,7 +97,9 @@ def get_daily_plan(tool_context: ToolContext) -> str:
     plan_date = daily_plan.get("date", "")
 
     if not plan_text:
-        return "NO_DAILY_PLAN: No daily plan has been generated yet. The user needs to accept their Master Plan first, which will automatically generate the daily plan."
+        if tool_context.state.get("plan_accepted"):
+            return "NO_DAILY_PLAN_GENERATED: Master Plan is accepted, but today's daily plan has not been generated yet. Please generate the COMPLETE DAILY BATTLE PLAN now."
+        return "NO_DAILY_PLAN: No daily plan has been generated yet. The user needs to accept their Master Plan first."
 
     today = datetime.now().strftime("%Y-%m-%d")
     if plan_date != today:

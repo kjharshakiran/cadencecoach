@@ -5,9 +5,9 @@ Uses LiteLLM wrapper for Claude integration with Google ADK.
 import os
 from google.adk.models.lite_llm import LiteLlm
 
-MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "anthropic")
+MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "gemini")
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "anthropic/claude-sonnet-4-20250514")
-GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_MODEL = "gemini-2.5-flash-lite"
 
 
 def get_model():

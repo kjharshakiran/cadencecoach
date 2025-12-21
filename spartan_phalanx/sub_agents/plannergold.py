@@ -1,8 +1,9 @@
 from google.adk.agents import Agent
+from spartan_phalanx.config import get_model
 
 planner_agent = Agent(
     name="planner_agent",
-    model="gemini-2.0-flash",
+    model=get_model(),
     description="Creates the Master Plan based on user profile.",
     instruction="""
     You are the PLANNER AGENT. You forge the war path.

@@ -1401,10 +1401,25 @@ def get_all_registered_users() -> list:
         engine = sqlalchemy.create_engine(db_url)
         with engine.connect() as conn:
             result = conn.execute(text("SELECT DISTINCT username FROM registered_users"))
-            return [row[0] for row in result.fetchall()]
+        return [row[0] for row in result.fetchall()]
     except Exception as e:
         logger.error(f"Error getting registered users: {e}")
         return []
+
+
+def register_user(username: str):
+    """Register a user in the database for scheduled tasks."""
+    try:
+        engine = sqlalchemy.create_engine(db_url)
+        with engine.connect() as conn:
+            # Check if user exists
+            result = conn.execute(text("SELECT 1 FROM registered_users WHERE username = :username"), {"username": username})
+            if not result.fetchone():
+                conn.execute(text("INSERT INTO registered_users (username) VALUES (:username)"), {"username": username})
+                conn.commit()
+                logger.info(f"Registered user {username} for scheduled tasks")
+    except Exception as e:
+        logger.error(f"Error registering user {username}: {e}")
 
 
 def get_user_local_time(timezone_str: str) -> datetime:
@@ -1529,13 +1544,25 @@ async def onboard(request: Request, onboard_data: OnboardRequest):
     # Force update the database
     force_update_state(session_id, current_state)
 
+    # Calculate days remaining for accurate planning
+    days_info = ""
+    try:
+        target_dt = datetime.strptime(onboard_data.target_date, "%Y-%m-%d")
+        days_remaining = (target_dt - datetime.now()).days
+        days_info = f" ({days_remaining} days remaining)"
+    except Exception as e:
+        logger.error(f"Error calculating days remaining: {e}")
+
     # Now ask the agent to create the Master Plan
     profile_text = (
         f"I have completed my profile setup. Here are my details:\n"
         f"Name: {onboard_data.name}, Age: {onboard_data.age}, Height: {onboard_data.height}cm, "
-        f"Weight: {onboard_data.weight}lbs, Goal: {onboard_data.goal}, Target Date: {onboard_data.target_date}\n"
-        f"My WHY (reason for this goal): {onboard_data.reason}\n\n"
-        f"Please create my Master Plan."
+        f"Weight: {onboard_data.weight}lbs\n"
+        f"Goal: {onboard_data.goal}\n"
+        f"Target Date: {onboard_data.target_date}{days_info}\n"
+        f"Reason: {onboard_data.reason}\n\n"
+        f"Please create my Master Plan YOURSELF. Do NOT call any sub-agents (fitness or nutrition) at this stage.\n"
+        f"Generate the complete high-level strategy based on my profile. I will ask for detailed daily plans later."
     )
     
     content = types.Content(role="user", parts=[types.Part(text=profile_text)])
@@ -1588,6 +1615,9 @@ async def onboard(request: Request, onboard_data: OnboardRequest):
 
     # Log the interaction
     log_agent_interaction(session_id, profile_text, final_response_text)
+
+    # Register user for scheduled tasks
+    register_user(user_id)
 
     return {"message": "Profile Submitted", "agent_response": final_response_text}
 
@@ -1673,8 +1703,8 @@ async def accept_plan(request: Request):
     # Generate actual daily plan by asking the agent
     try:
         daily_plan_prompt = (
-            f"I have accepted my Master Plan. Today is {today}. "
-            f"Generate my COMPLETE DAILY BATTLE PLAN as a single unified schedule organized by TIME.\n\n"
+            f"COMMAND: Generate a NEW COMPLETE DAILY BATTLE PLAN for today ({today}). "
+            f"The Master Plan has just been accepted. DO NOT retrieve a stored plan. GENERATE a new one.\n\n"
             f"INCLUDE ALL OF THE FOLLOWING IN ONE RESPONSE:\n"
             f"1. 🌅 MORNING ROUTINE (wake up time, ice wash, weight check-in)\n"
             f"2. 💪 TODAY'S WORKOUT with specific exercises, sets, reps, and timing\n"
@@ -1684,7 +1714,7 @@ async def accept_plan(request: Request):
             f"6. ✅ DAILY GOALS CHECKLIST (vitamins, medicine, ABC drink, etc.)\n"
             f"7. 🌙 EVENING ROUTINE\n\n"
             f"Format as a TIME-BASED SCHEDULE from wake-up to bedtime.\n"
-            f"DO NOT delegate to sub-agents - provide the complete plan yourself."
+            f"DO NOT delegate - provide the complete plan yourself."
         )
 
         content = types.Content(role="user", parts=[types.Part(text=daily_plan_prompt)])
@@ -1977,17 +2007,19 @@ async def get_master_plan(request: Request):
     state = session.state
 
     master_plan = state.get("master_plan", {})
+    logger.info(f"Retrieving master plan. Keys: {master_plan.keys()}")
 
     if master_plan.get("plan_text"):
         return {
             "created_at": master_plan.get("created_at"),
             "plan_text": master_plan.get("plan_text")
         }
-
+    
+    logger.warning("No plan_text found in master_plan")
     raise HTTPException(status_code=404, detail="No master plan available")
 
 @app.post("/api/simulate-journey")
-async def simulate_journey():
+async def simulate_journey(request: Request):
     """Simulate historical data for testing the goal journey."""
     import random
     from datetime import timedelta

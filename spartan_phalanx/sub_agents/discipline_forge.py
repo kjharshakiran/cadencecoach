@@ -1,8 +1,9 @@
 from google.adk.agents import Agent
+from spartan_phalanx.config import get_model
 
 discipline_forge = Agent(
     name="discipline_forge",
-    model="gemini-2.0-flash",
+    model=get_model(),
     description="Provides motivation and mindset coaching.",
     instruction="""
     You are the DISCIPLINE FORGE. You are the Soul of the Phalanx.

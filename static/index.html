@@ -11,24 +11,24 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            /* Clean White Theme with Red Accents */
-            --bg-color: #ffffff;
-            --card-bg: #ffffff;
-            --card-bg-light: #f9fafb;
-            --text-color: #111827;
-            --text-muted: #6b7280;
+            /* Dark Theme with Red Accents */
+            --bg-color: #09090b;
+            --card-bg: #18181b;
+            --card-bg-light: #27272a;
+            --text-color: #f4f4f5;
+            --text-muted: #a1a1aa;
             --accent-color: #dc2626;
             --accent-hover: #b91c1c;
-            --accent-glow: rgba(220, 38, 38, 0.12);
+            --accent-glow: rgba(220, 38, 38, 0.5);
             --success-color: #16a34a;
             --warning-color: #d97706;
             --info-color: #2563eb;
-            --border-color: #e5e7eb;
-            --border-light: #f3f4f6;
-            --gradient-dark: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
-            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+            --border-color: #27272a;
+            --border-light: #3f3f46;
+            --gradient-dark: linear-gradient(180deg, #18181b 0%, #09090b 100%);
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
         }
 
         * {
@@ -59,8 +59,8 @@
             right: 0;
             bottom: 0;
             background-image:
-                linear-gradient(#f3f4f6 1px, transparent 1px),
-                linear-gradient(90deg, #f3f4f6 1px, transparent 1px);
+                linear-gradient(#27272a 1px, transparent 1px),
+                linear-gradient(90deg, #27272a 1px, transparent 1px);
             background-size: 40px 40px;
             pointer-events: none;
             z-index: 0;
@@ -69,18 +69,43 @@
 
         /* No colored gradient - clean white */
         body::after {
-            content: none;
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 0%, rgba(220, 38, 38, 0.15) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
         }
 
         @keyframes float {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            25% { transform: translate(2%, 2%) rotate(1deg); }
-            50% { transform: translate(0, 4%) rotate(0deg); }
-            75% { transform: translate(-2%, 2%) rotate(-1deg); }
+
+            0%,
+            100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+
+            25% {
+                transform: translate(2%, 2%) rotate(1deg);
+            }
+
+            50% {
+                transform: translate(0, 4%) rotate(0deg);
+            }
+
+            75% {
+                transform: translate(-2%, 2%) rotate(-1deg);
+            }
         }
 
         /* Ensure content is above background */
-        header, .container, .nav-tabs, .user-bar, #urgency-banner {
+        header,
+        .container,
+        .nav-tabs,
+        .user-bar,
+        #urgency-banner {
             position: relative;
             z-index: 1;
         }
@@ -170,8 +195,15 @@
         }
 
         @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 60px var(--accent-glow), 0 0 100px rgba(239, 68, 68, 0.15), 0 0 0 1px rgba(239, 68, 68, 0.3); }
-            50% { box-shadow: 0 0 80px var(--accent-glow), 0 0 120px rgba(239, 68, 68, 0.2), 0 0 0 2px rgba(239, 68, 68, 0.4); }
+
+            0%,
+            100% {
+                box-shadow: 0 0 60px var(--accent-glow), 0 0 100px rgba(239, 68, 68, 0.15), 0 0 0 1px rgba(239, 68, 68, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 0 80px var(--accent-glow), 0 0 120px rgba(239, 68, 68, 0.2), 0 0 0 2px rgba(239, 68, 68, 0.4);
+            }
         }
 
         .logo-container::before {
@@ -189,8 +221,13 @@
         }
 
         @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .logo-container img {
@@ -216,7 +253,9 @@
         }
 
         @keyframes shine {
-            to { background-position: 200% center; }
+            to {
+                background-position: 200% center;
+            }
         }
 
         .subtitle {
@@ -353,6 +392,7 @@
             .form-grid {
                 grid-template-columns: 1fr;
             }
+
             #onboarding-form {
                 padding: 24px;
                 margin: 0 16px;
@@ -505,6 +545,7 @@
                 flex-direction: column;
                 gap: 16px;
             }
+
             .feature-item {
                 flex-direction: row;
                 gap: 12px;
@@ -518,7 +559,7 @@
             overflow-x: hidden;
             padding: 24px;
             margin-bottom: 16px;
-            background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.2) 100%);
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.2) 100%);
             border-radius: 16px;
             border: 1px solid var(--border-color);
             display: flex;
@@ -559,6 +600,7 @@
                 opacity: 0;
                 transform: translateY(10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -672,12 +714,27 @@
             animation: typing 1.4s infinite ease-in-out;
         }
 
-        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
 
         @keyframes typing {
-            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-            30% { transform: translateY(-8px); opacity: 1; }
+
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+
+            30% {
+                transform: translateY(-8px);
+                opacity: 1;
+            }
         }
 
         #input-area {
@@ -766,6 +823,7 @@
            MOBILE RESPONSIVE STYLES
            ═══════════════════════════════════════════════════════════════ */
         @media (max-width: 768px) {
+
             /* User bar - stack vertically and reposition */
             .user-bar {
                 position: fixed;
@@ -840,12 +898,13 @@
             .container {
                 width: 98%;
                 padding: 12px;
-                margin-bottom: 70px; /* Space for bottom user bar */
+                margin-bottom: 70px;
+                /* Space for bottom user bar */
                 border-radius: 12px;
             }
 
             /* Chat interface - hide sidebar on mobile */
-            #chat-interface > div {
+            #chat-interface>div {
                 flex-direction: column !important;
             }
 
@@ -875,7 +934,8 @@
                 padding: 10px 14px;
             }
 
-            #send-btn, #mic-btn {
+            #send-btn,
+            #mic-btn {
                 padding: 10px 14px;
                 font-size: 0.7rem;
             }
@@ -978,7 +1038,7 @@
         }
 
         .chart-card {
-            background: linear-gradient(180deg, rgba(39,39,42,0.4) 0%, rgba(24,24,27,0.4) 100%);
+            background: linear-gradient(180deg, rgba(39, 39, 42, 0.4) 0%, rgba(24, 24, 27, 0.4) 100%);
             border: 1px solid var(--border-color);
             border-radius: 16px;
             padding: 20px;
@@ -1109,7 +1169,7 @@
             right: 15px;
             top: 50%;
             transform: translateY(-50%);
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
             border: none;
             color: inherit;
             font-size: 1.2rem;
@@ -1120,27 +1180,60 @@
         }
 
         .urgency-banner .dismiss-btn:hover {
-            background: rgba(255,255,255,0.4);
+            background: rgba(255, 255, 255, 0.4);
         }
 
-        .urgency-banner.green { background: linear-gradient(90deg, rgba(34, 197, 94, 0.9), rgba(22, 163, 74, 0.9)); color: white; }
-        .urgency-banner.yellow { background: linear-gradient(90deg, rgba(245, 158, 11, 0.9), rgba(217, 119, 6, 0.9)); color: black; }
-        .urgency-banner.orange { background: linear-gradient(90deg, rgba(249, 115, 22, 0.9), rgba(234, 88, 12, 0.9)); color: white; }
-        .urgency-banner.red { background: linear-gradient(90deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9)); color: white; animation: urgencyPulse 1s infinite; }
+        .urgency-banner.green {
+            background: linear-gradient(90deg, rgba(34, 197, 94, 0.9), rgba(22, 163, 74, 0.9));
+            color: white;
+        }
+
+        .urgency-banner.yellow {
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.9), rgba(217, 119, 6, 0.9));
+            color: black;
+        }
+
+        .urgency-banner.orange {
+            background: linear-gradient(90deg, rgba(249, 115, 22, 0.9), rgba(234, 88, 12, 0.9));
+            color: white;
+        }
+
+        .urgency-banner.red {
+            background: linear-gradient(90deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9));
+            color: white;
+            animation: urgencyPulse 1s infinite;
+        }
 
         @keyframes slideDown {
-            from { transform: translateY(-100%); }
-            to { transform: translateY(0); }
+            from {
+                transform: translateY(-100%);
+            }
+
+            to {
+                transform: translateY(0);
+            }
         }
 
         @keyframes urgencyPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
         }
 
         @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
         }
 
         /* Notification Bell */
@@ -1178,7 +1271,9 @@
             justify-content: center;
         }
 
-        .notification-badge.hidden { display: none; }
+        .notification-badge.hidden {
+            display: none;
+        }
 
         .notification-panel {
             position: absolute;
@@ -1189,13 +1284,15 @@
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
             overflow: hidden;
             display: none;
             z-index: 1002;
         }
 
-        .notification-panel.active { display: block; }
+        .notification-panel.active {
+            display: block;
+        }
 
         .notification-header {
             padding: 12px 16px;
@@ -1370,7 +1467,7 @@
         .step-input {
             flex: 1;
             padding: 8px;
-            background: rgba(0,0,0,0.3);
+            background: rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(34, 197, 94, 0.3);
             border-radius: 6px;
             color: white;
@@ -1443,7 +1540,7 @@
             align-items: center;
             justify-content: center;
             font-size: 28px;
-            background: rgba(255,255,255,0.05);
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .integration-title {
@@ -1500,7 +1597,7 @@
         }
 
         .integration-feature {
-            background: rgba(255,255,255,0.05);
+            background: rgba(255, 255, 255, 0.05);
             padding: 4px 10px;
             border-radius: 4px;
             font-size: 0.7rem;
@@ -1619,7 +1716,8 @@
             </div>
             <!-- Notification Bell -->
             <div class="notification-bell" id="notification-bell" onclick="toggleNotifications()">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                     <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                 </svg>
@@ -1628,10 +1726,13 @@
                 <div id="notification-panel" class="notification-panel">
                     <div class="notification-header">
                         <h4>Coach Orders</h4>
-                        <button onclick="clearNotifications()" style="background: none; border: none; color: var(--text-muted); font-size: 0.7rem; cursor: pointer;">Clear All</button>
+                        <button onclick="clearNotifications()"
+                            style="background: none; border: none; color: var(--text-muted); font-size: 0.7rem; cursor: pointer;">Clear
+                            All</button>
                     </div>
                     <div id="notification-list" class="notification-list">
-                        <div style="padding: 20px; text-align: center; color: var(--text-muted);">No orders pending</div>
+                        <div style="padding: 20px; text-align: center; color: var(--text-muted);">No orders pending
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1687,7 +1788,9 @@
 
             <div class="input-group">
                 <label for="reason">Why is this important to you?</label>
-                <textarea id="reason" placeholder="e.g., I want to be healthy for my kids, I want to feel confident, I want to prove to myself I can do this..." required style="min-height: 80px; resize: vertical;"></textarea>
+                <textarea id="reason"
+                    placeholder="e.g., I want to be healthy for my kids, I want to feel confident, I want to prove to myself I can do this..."
+                    required style="min-height: 80px; resize: vertical;"></textarea>
             </div>
 
             <button class="primary-btn" onclick="submitProfile()">INITIATE PROTOCOL</button>
@@ -1719,8 +1822,9 @@
                         <input type="text" id="message-input" placeholder="Report to the Commander..."
                             onkeypress="handleKeyPress(event)">
                         <button id="mic-btn" onclick="toggleMic()">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
                                 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
                                 <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
                                 <line x1="12" y1="19" x2="12" y2="23"></line>
@@ -1732,12 +1836,17 @@
                 </div>
 
                 <!-- Daily Sidebar with Carousel -->
-                <div id="goals-sidebar" style="width: 360px; background: linear-gradient(180deg, rgba(39,39,42,0.5) 0%, rgba(24,24,27,0.5) 100%); border-radius: 16px; padding: 16px; border: 1px solid var(--border-color); display: none; flex-direction: column; backdrop-filter: blur(10px);">
+                <div id="goals-sidebar"
+                    style="width: 360px; background: linear-gradient(180deg, rgba(39,39,42,0.5) 0%, rgba(24,24,27,0.5) 100%); border-radius: 16px; padding: 16px; border: 1px solid var(--border-color); display: none; flex-direction: column; backdrop-filter: blur(10px);">
                     <!-- Carousel Tabs -->
-                    <div style="display: flex; gap: 4px; margin-bottom: 16px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 10px;">
-                        <button id="tab-checklist" onclick="switchSidebarTab('checklist')" style="flex: 1; padding: 10px 8px; background: var(--accent-color); border: none; border-radius: 8px; color: white; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s; box-shadow: 0 2px 8px var(--accent-glow);">Checklist</button>
-                        <button id="tab-daily" onclick="switchSidebarTab('daily')" style="flex: 1; padding: 10px 8px; background: transparent; border: none; border-radius: 8px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s;">Daily</button>
-                        <button id="tab-master" onclick="switchSidebarTab('master')" style="flex: 1; padding: 10px 8px; background: transparent; border: none; border-radius: 8px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s;">Master</button>
+                    <div
+                        style="display: flex; gap: 4px; margin-bottom: 16px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 10px;">
+                        <button id="tab-checklist" onclick="switchSidebarTab('checklist')"
+                            style="flex: 1; padding: 10px 8px; background: var(--accent-color); border: none; border-radius: 8px; color: white; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s; box-shadow: 0 2px 8px var(--accent-glow);">Checklist</button>
+                        <button id="tab-daily" onclick="switchSidebarTab('daily')"
+                            style="flex: 1; padding: 10px 8px; background: transparent; border: none; border-radius: 8px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s;">Daily</button>
+                        <button id="tab-master" onclick="switchSidebarTab('master')"
+                            style="flex: 1; padding: 10px 8px; background: transparent; border: none; border-radius: 8px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s;">Master</button>
                     </div>
 
                     <!-- Checklist View -->
@@ -1746,7 +1855,8 @@
                         <div class="water-tracker" id="water-tracker">
                             <div class="water-header">
                                 <span class="water-title">💧 Hydration</span>
-                                <span class="water-count"><span id="water-current">0</span>/<span id="water-target">8</span></span>
+                                <span class="water-count"><span id="water-current">0</span>/<span
+                                        id="water-target">8</span></span>
                             </div>
                             <div class="water-glasses" id="water-glasses">
                                 <!-- Dynamic glass indicators based on target -->
@@ -1758,7 +1868,8 @@
                         <div class="step-tracker" id="step-tracker">
                             <div class="step-header">
                                 <span class="step-title">👟 Steps</span>
-                                <span class="step-count"><span id="step-current">0</span>/<span id="step-target">10k</span></span>
+                                <span class="step-count"><span id="step-current">0</span>/<span
+                                        id="step-target">10k</span></span>
                             </div>
                             <div class="step-progress-bar">
                                 <div class="step-progress-fill" id="step-progress" style="width: 0%"></div>
@@ -1770,38 +1881,56 @@
                         </div>
 
                         <!-- Metrics Input Section -->
-                        <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 12px; margin-bottom: 12px; border: 1px solid var(--border-color);">
-                            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--accent-color); text-transform: uppercase; margin-bottom: 10px;">Daily Metrics</div>
+                        <div
+                            style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 12px; margin-bottom: 12px; border: 1px solid var(--border-color);">
+                            <div
+                                style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--accent-color); text-transform: uppercase; margin-bottom: 10px;">
+                                Daily Metrics</div>
                             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
                                 <div>
-                                    <label style="font-size: 0.65rem; color: #666; display: block; margin-bottom: 4px;">Weight (lbs)</label>
-                                    <input type="number" id="metric-weight" step="0.1" placeholder="165" style="width: 100%; padding: 8px; font-size: 0.85rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 4px; color: white; box-sizing: border-box;">
+                                    <label
+                                        style="font-size: 0.65rem; color: #666; display: block; margin-bottom: 4px;">Weight
+                                        (lbs)</label>
+                                    <input type="number" id="metric-weight" step="0.1" placeholder="165"
+                                        style="width: 100%; padding: 8px; font-size: 0.85rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 4px; color: white; box-sizing: border-box;">
                                 </div>
                                 <div>
-                                    <label style="font-size: 0.65rem; color: #666; display: block; margin-bottom: 4px;">Sleep (hrs)</label>
-                                    <input type="number" id="metric-sleep" step="0.5" placeholder="7.5" style="width: 100%; padding: 8px; font-size: 0.85rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 4px; color: white; box-sizing: border-box;">
+                                    <label
+                                        style="font-size: 0.65rem; color: #666; display: block; margin-bottom: 4px;">Sleep
+                                        (hrs)</label>
+                                    <input type="number" id="metric-sleep" step="0.5" placeholder="7.5"
+                                        style="width: 100%; padding: 8px; font-size: 0.85rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 4px; color: white; box-sizing: border-box;">
                                 </div>
                                 <div>
-                                    <label style="font-size: 0.65rem; color: #666; display: block; margin-bottom: 4px;">Recovery %</label>
-                                    <input type="number" id="metric-recovery" min="0" max="100" placeholder="85" style="width: 100%; padding: 8px; font-size: 0.85rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 4px; color: white; box-sizing: border-box;">
+                                    <label
+                                        style="font-size: 0.65rem; color: #666; display: block; margin-bottom: 4px;">Recovery
+                                        %</label>
+                                    <input type="number" id="metric-recovery" min="0" max="100" placeholder="85"
+                                        style="width: 100%; padding: 8px; font-size: 0.85rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 4px; color: white; box-sizing: border-box;">
                                 </div>
                             </div>
-                            <button onclick="saveMetrics()" style="width: 100%; margin-top: 10px; padding: 8px; background: linear-gradient(135deg, var(--accent-color), #b91c1c); border: none; border-radius: 4px; color: white; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; text-transform: uppercase;">Save Metrics</button>
+                            <button onclick="saveMetrics()"
+                                style="width: 100%; margin-top: 10px; padding: 8px; background: linear-gradient(135deg, var(--accent-color), #b91c1c); border: none; border-radius: 4px; color: white; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; text-transform: uppercase;">Save
+                                Metrics</button>
                         </div>
 
                         <!-- Progress Bar -->
                         <div id="goals-progress" style="margin-bottom: 12px;">
-                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #64748b; margin-bottom: 5px;">
+                            <div
+                                style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #64748b; margin-bottom: 5px;">
                                 <span id="goals-count">0/0 completed</span>
                                 <span id="goals-percent">0%</span>
                             </div>
                             <div style="background: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden;">
-                                <div id="goals-bar" style="background: var(--accent-color); height: 100%; width: 0%; transition: width 0.3s;"></div>
+                                <div id="goals-bar"
+                                    style="background: var(--accent-color); height: 100%; width: 0%; transition: width 0.3s;">
+                                </div>
                             </div>
                         </div>
 
                         <!-- Goals List -->
-                        <div id="goals-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;">
+                        <div id="goals-list"
+                            style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;">
                         </div>
                     </div>
 
@@ -1826,27 +1955,36 @@
         <button class="mobile-sidebar-toggle" id="mobile-sidebar-toggle" onclick="toggleMobileSidebar()">📋</button>
 
         <!-- Mobile Sidebar Overlay -->
-        <div id="mobile-sidebar-overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1002; padding: 20px; overflow-y: auto;">
-            <div style="max-width: 400px; margin: 0 auto; background: var(--card-bg); border-radius: 16px; padding: 16px; border: 1px solid var(--border-color);">
+        <div id="mobile-sidebar-overlay"
+            style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1002; padding: 20px; overflow-y: auto;">
+            <div
+                style="max-width: 400px; margin: 0 auto; background: var(--card-bg); border-radius: 16px; padding: 16px; border: 1px solid var(--border-color);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                     <h3 style="margin: 0; font-size: 1rem; color: var(--text-color);">📋 Your Plan</h3>
-                    <button onclick="toggleMobileSidebar()" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+                    <button onclick="toggleMobileSidebar()"
+                        style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
                 </div>
                 <!-- Mobile Carousel Tabs -->
-                <div style="display: flex; gap: 4px; margin-bottom: 16px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 10px;">
-                    <button id="mobile-tab-checklist" onclick="switchMobileSidebarTab('checklist')" style="flex: 1; padding: 10px 8px; background: var(--accent-color); border: none; border-radius: 8px; color: white; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; text-transform: uppercase;">Checklist</button>
-                    <button id="mobile-tab-daily" onclick="switchMobileSidebarTab('daily')" style="flex: 1; padding: 10px 8px; background: transparent; border: none; border-radius: 8px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; text-transform: uppercase;">Daily</button>
-                    <button id="mobile-tab-master" onclick="switchMobileSidebarTab('master')" style="flex: 1; padding: 10px 8px; background: transparent; border: none; border-radius: 8px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; text-transform: uppercase;">Master</button>
+                <div
+                    style="display: flex; gap: 4px; margin-bottom: 16px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 10px;">
+                    <button id="mobile-tab-checklist" onclick="switchMobileSidebarTab('checklist')"
+                        style="flex: 1; padding: 10px 8px; background: var(--accent-color); border: none; border-radius: 8px; color: white; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; text-transform: uppercase;">Checklist</button>
+                    <button id="mobile-tab-daily" onclick="switchMobileSidebarTab('daily')"
+                        style="flex: 1; padding: 10px 8px; background: transparent; border: none; border-radius: 8px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; text-transform: uppercase;">Daily</button>
+                    <button id="mobile-tab-master" onclick="switchMobileSidebarTab('master')"
+                        style="flex: 1; padding: 10px 8px; background: transparent; border: none; border-radius: 8px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; text-transform: uppercase;">Master</button>
                 </div>
                 <!-- Mobile Content Views -->
                 <div id="mobile-checklist-view" style="display: block;">
                     <div id="mobile-goals-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
                 </div>
                 <div id="mobile-daily-view" style="display: none;">
-                    <div id="mobile-daily-plan-content" style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.6;"></div>
+                    <div id="mobile-daily-plan-content"
+                        style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.6;"></div>
                 </div>
                 <div id="mobile-master-view" style="display: none;">
-                    <div id="mobile-master-plan-content" style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.6;"></div>
+                    <div id="mobile-master-plan-content"
+                        style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.6;"></div>
                 </div>
             </div>
         </div>
@@ -1858,19 +1996,27 @@
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <h3>Journey Progress</h3>
                     <div style="display: flex; gap: 10px;">
-                        <button onclick="simulateJourney()" style="padding: 8px 12px; background: transparent; border: 1px solid var(--border-color); color: #64748b; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; cursor: pointer; text-transform: uppercase;">Simulate Data</button>
-                        <button onclick="completeGoal()" id="complete-goal-btn" style="padding: 8px 12px; background: linear-gradient(135deg, #22c55e, #16a34a); border: none; color: white; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; cursor: pointer; text-transform: uppercase;">Complete Goal</button>
+                        <button onclick="simulateJourney()"
+                            style="padding: 8px 12px; background: transparent; border: 1px solid var(--border-color); color: #64748b; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; cursor: pointer; text-transform: uppercase;">Simulate
+                            Data</button>
+                        <button onclick="completeGoal()" id="complete-goal-btn"
+                            style="padding: 8px 12px; background: linear-gradient(135deg, #22c55e, #16a34a); border: none; color: white; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; cursor: pointer; text-transform: uppercase;">Complete
+                            Goal</button>
                     </div>
                 </div>
                 <div id="journey-progress" style="margin-top: 15px;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                         <span style="font-size: 0.85rem; color: #64748b;">Progress to Goal</span>
-                        <span id="progress-percent" style="font-size: 0.85rem; color: var(--accent-color); font-weight: bold;">0%</span>
+                        <span id="progress-percent"
+                            style="font-size: 0.85rem; color: var(--accent-color); font-weight: bold;">0%</span>
                     </div>
                     <div style="background: #e2e8f0; height: 12px; border-radius: 6px; overflow: hidden;">
-                        <div id="progress-bar" style="background: linear-gradient(90deg, var(--accent-color), #22c55e); height: 100%; width: 0%; transition: width 0.5s;"></div>
+                        <div id="progress-bar"
+                            style="background: linear-gradient(90deg, var(--accent-color), #22c55e); height: 100%; width: 0%; transition: width 0.5s;">
+                        </div>
                     </div>
-                    <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.75rem; color: #666;">
+                    <div
+                        style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.75rem; color: #666;">
                         <span id="progress-start">Start: 176lbs</span>
                         <span id="progress-current">Current: 176lbs</span>
                         <span id="progress-target">Target: 165lbs</span>
@@ -1885,9 +2031,14 @@
                     <!-- Calendar days will be populated here -->
                 </div>
                 <div style="display: flex; gap: 15px; margin-top: 15px; font-size: 0.75rem; color: #64748b;">
-                    <span><span style="display: inline-block; width: 12px; height: 12px; background: #22c55e; border-radius: 2px; margin-right: 5px;"></span>All goals done</span>
-                    <span><span style="display: inline-block; width: 12px; height: 12px; background: #f59e0b; border-radius: 2px; margin-right: 5px;"></span>Partial</span>
-                    <span><span style="display: inline-block; width: 12px; height: 12px; background: #e2e8f0; border-radius: 2px; margin-right: 5px;"></span>No data</span>
+                    <span><span
+                            style="display: inline-block; width: 12px; height: 12px; background: #22c55e; border-radius: 2px; margin-right: 5px;"></span>All
+                        goals done</span>
+                    <span><span
+                            style="display: inline-block; width: 12px; height: 12px; background: #f59e0b; border-radius: 2px; margin-right: 5px;"></span>Partial</span>
+                    <span><span
+                            style="display: inline-block; width: 12px; height: 12px; background: #e2e8f0; border-radius: 2px; margin-right: 5px;"></span>No
+                        data</span>
                 </div>
             </div>
 
@@ -1912,507 +2063,562 @@
         </div>
     </div>
 
-<button id="reset-btn" type="button" onclick="resetData()">⚠ FACTORY RESET</button>
+    <button id="reset-btn" type="button" onclick="resetData()">⚠ FACTORY RESET</button>
 
-<!-- Goal Accomplished Modal -->
-<div id="celebration-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
-    <div style="background: #ffffff; border: 2px solid var(--accent-color); border-radius: 20px; padding: 40px; max-width: 500px; text-align: center; animation: fadeInUp 0.5s ease-out; box-shadow: 0 25px 50px rgba(0,0,0,0.2);">
-        <div style="font-size: 4rem; margin-bottom: 20px;">🏆</div>
-        <h2 style="color: var(--accent-color); font-family: 'JetBrains Mono', monospace; font-size: 1.8rem; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 3px;">Goal Accomplished!</h2>
-        <p id="celebration-name" style="color: #64748b; font-size: 1.1rem; margin-bottom: 30px;">You are a TRUE SPARTAN!</p>
+    <!-- Goal Accomplished Modal -->
+    <div id="celebration-modal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+        <div
+            style="background: #ffffff; border: 2px solid var(--accent-color); border-radius: 20px; padding: 40px; max-width: 500px; text-align: center; animation: fadeInUp 0.5s ease-out; box-shadow: 0 25px 50px rgba(0,0,0,0.2);">
+            <div style="font-size: 4rem; margin-bottom: 20px;">🏆</div>
+            <h2
+                style="color: var(--accent-color); font-family: 'JetBrains Mono', monospace; font-size: 1.8rem; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 3px;">
+                Goal Accomplished!</h2>
+            <p id="celebration-name" style="color: #64748b; font-size: 1.1rem; margin-bottom: 30px;">You are a TRUE
+                SPARTAN!</p>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px;">
-            <div style="background: #f9fafb; padding: 15px; border-radius: 10px; border: 1px solid #e5e7eb;">
-                <div style="font-size: 2rem; color: var(--accent-color); font-weight: bold;" id="stat-weight-lost">-11lbs</div>
-                <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Weight Lost</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px;">
+                <div style="background: #f9fafb; padding: 15px; border-radius: 10px; border: 1px solid #e5e7eb;">
+                    <div style="font-size: 2rem; color: var(--accent-color); font-weight: bold;" id="stat-weight-lost">
+                        -11lbs</div>
+                    <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Weight Lost</div>
+                </div>
+                <div style="background: #f9fafb; padding: 15px; border-radius: 10px; border: 1px solid #e5e7eb;">
+                    <div style="font-size: 2rem; color: #22c55e; font-weight: bold;" id="stat-days">78</div>
+                    <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Days Completed</div>
+                </div>
+                <div style="background: #f9fafb; padding: 15px; border-radius: 10px; border: 1px solid #e5e7eb;">
+                    <div style="font-size: 2rem; color: #3b82f6; font-weight: bold;" id="stat-sleep">7.5h</div>
+                    <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Avg Sleep</div>
+                </div>
+                <div style="background: #f9fafb; padding: 15px; border-radius: 10px; border: 1px solid #e5e7eb;">
+                    <div style="font-size: 2rem; color: #f59e0b; font-weight: bold;" id="stat-perfect">12</div>
+                    <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Perfect Days</div>
+                </div>
             </div>
-            <div style="background: #f9fafb; padding: 15px; border-radius: 10px; border: 1px solid #e5e7eb;">
-                <div style="font-size: 2rem; color: #22c55e; font-weight: bold;" id="stat-days">78</div>
-                <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Days Completed</div>
+
+            <div
+                style="background: rgba(220, 38, 38, 0.05); border: 1px solid rgba(220, 38, 38, 0.2); padding: 15px; border-radius: 10px; margin-bottom: 25px;">
+                <div style="font-size: 0.9rem; color: #475569;" id="stat-journey">
+                    <span id="stat-start">176lbs</span> → <span id="stat-final"
+                        style="color: var(--accent-color); font-weight: bold;">165lbs</span>
+                </div>
+                <div style="font-size: 0.75rem; color: #64748b; margin-top: 5px;">Your Transformation Journey</div>
             </div>
-            <div style="background: #f9fafb; padding: 15px; border-radius: 10px; border: 1px solid #e5e7eb;">
-                <div style="font-size: 2rem; color: #3b82f6; font-weight: bold;" id="stat-sleep">7.5h</div>
-                <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Avg Sleep</div>
-            </div>
-            <div style="background: #f9fafb; padding: 15px; border-radius: 10px; border: 1px solid #e5e7eb;">
-                <div style="font-size: 2rem; color: #f59e0b; font-weight: bold;" id="stat-perfect">12</div>
-                <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Perfect Days</div>
-            </div>
+
+            <button onclick="closeCelebration()"
+                style="background: linear-gradient(135deg, var(--accent-color), #b91c1c); color: white; border: none; padding: 15px 40px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 1rem; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;">Continue
+                as Champion</button>
         </div>
-
-        <div style="background: rgba(220, 38, 38, 0.05); border: 1px solid rgba(220, 38, 38, 0.2); padding: 15px; border-radius: 10px; margin-bottom: 25px;">
-            <div style="font-size: 0.9rem; color: #475569;" id="stat-journey">
-                <span id="stat-start">176lbs</span> → <span id="stat-final" style="color: var(--accent-color); font-weight: bold;">165lbs</span>
-            </div>
-            <div style="font-size: 0.75rem; color: #64748b; margin-top: 5px;">Your Transformation Journey</div>
-        </div>
-
-        <button onclick="closeCelebration()" style="background: linear-gradient(135deg, var(--accent-color), #b91c1c); color: white; border: none; padding: 15px 40px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 1rem; cursor: pointer; text-transform: uppercase; letter-spacing: 2px;">Continue as Champion</button>
     </div>
-</div>
 
-        <!-- Integrations Page -->
-        <div id="integrations-interface" class="section">
-            <div class="integrations-header">
-                <h2>Integrations Hub</h2>
-                <p>Connect your fitness ecosystem. The more data sources you connect, the smarter your coach becomes at detecting progress and holding you accountable.</p>
-            </div>
+    <!-- Integrations Page -->
+    <div id="integrations-interface" class="section">
+        <div class="integrations-header">
+            <h2>Integrations Hub</h2>
+            <p>Connect your fitness ecosystem. The more data sources you connect, the smarter your coach becomes at
+                detecting progress and holding you accountable.</p>
+        </div>
 
-            <!-- Trust But Verify Banner -->
-            <div class="trust-verify-banner">
-                <div class="icon">🔍</div>
-                <div class="content">
-                    <h4>Trust But Verify Protocol</h4>
-                    <p>Your Spartan Coach cross-references your manual logs with connected data sources. This ensures accountability and detects discrepancies between what you report and what actually happened. No more fooling yourself - only real progress counts.</p>
-                </div>
-            </div>
-
-            <!-- Activity & Movement -->
-            <div class="integration-category">Activity & Movement Tracking</div>
-            <div class="integrations-grid">
-                <!-- WHOOP -->
-                <div class="integration-card" id="whoop-integration-card">
-                    <div class="integration-header">
-                        <div class="integration-icon" style="background: rgba(0, 255, 136, 0.1);">⌚</div>
-                        <div class="integration-title">
-                            <h3>WHOOP</h3>
-                            <span>Strain & Recovery</span>
-                        </div>
-                        <span class="integration-status available" id="whoop-status-badge">Available</span>
-                    </div>
-                    <p class="integration-description">
-                        Auto-sync strain scores, recovery metrics, sleep performance, and HRV data. Coach will verify your workout intensity claims against actual strain data.
-                    </p>
-                    <!-- Whoop Data Display (shown when connected) -->
-                    <div id="whoop-data-display" style="display: none; margin: 12px 0; padding: 12px; background: rgba(0, 255, 136, 0.05); border-radius: 8px; border: 1px solid rgba(0, 255, 136, 0.2);">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem;">
-                            <div>
-                                <span style="color: var(--text-muted);">Recovery:</span>
-                                <span id="whoop-recovery" style="font-weight: 600; margin-left: 4px;">--</span>
-                            </div>
-                            <div>
-                                <span style="color: var(--text-muted);">Strain:</span>
-                                <span id="whoop-strain" style="font-weight: 600; margin-left: 4px;">--</span>
-                            </div>
-                            <div>
-                                <span style="color: var(--text-muted);">Sleep:</span>
-                                <span id="whoop-sleep" style="font-weight: 600; margin-left: 4px;">--</span>
-                            </div>
-                            <div>
-                                <span style="color: var(--text-muted);">HRV:</span>
-                                <span id="whoop-hrv" style="font-weight: 600; margin-left: 4px;">--</span>
-                            </div>
-                        </div>
-                        <div style="margin-top: 8px; font-size: 0.75rem; color: var(--text-muted);">
-                            Last sync: <span id="whoop-last-sync">--</span>
-                        </div>
-                    </div>
-                    <div class="integration-features">
-                        <span class="integration-feature">Strain Score</span>
-                        <span class="integration-feature">Recovery %</span>
-                        <span class="integration-feature">HRV</span>
-                        <span class="integration-feature">Sleep Quality</span>
-                    </div>
-                    <button class="integration-btn connect" id="whoop-connect-btn" onclick="connectWhoop()">Connect WHOOP</button>
-                </div>
-
-                <!-- WhatsApp Notifications -->
-                <div class="integration-card" id="whatsapp-integration-card">
-                    <div class="integration-header">
-                        <div class="integration-icon" style="background: rgba(37, 211, 102, 0.1);">📱</div>
-                        <div class="integration-title">
-                            <h3>WhatsApp</h3>
-                            <span>Push Notifications</span>
-                        </div>
-                        <span class="integration-status available" id="whatsapp-status-badge">Available</span>
-                    </div>
-                    <p class="integration-description">
-                        Get proactive coaching reminders, water alerts, workout notifications, and daily summaries delivered directly to WhatsApp.
-                    </p>
-                    <!-- WhatsApp Connection Form (shown when disconnected) -->
-                    <div id="whatsapp-connect-form" style="margin: 12px 0;">
-                        <div style="display: flex; gap: 8px;">
-                            <input type="tel" id="whatsapp-phone-input" placeholder="+1234567890"
-                                   style="flex: 1; padding: 10px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text-primary); font-size: 0.9rem;">
-                            <button class="integration-btn connect" onclick="connectWhatsApp()" style="padding: 10px 16px;">Connect</button>
-                        </div>
-                        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;">
-                            First, send "join <your-sandbox-code>" to +14155238886 on WhatsApp
-                        </p>
-                    </div>
-                    <!-- WhatsApp Connected State (shown when connected) -->
-                    <div id="whatsapp-connected-state" style="display: none; margin: 12px 0; padding: 12px; background: rgba(37, 211, 102, 0.05); border-radius: 8px; border: 1px solid rgba(37, 211, 102, 0.2);">
-                        <div style="display: flex; align-items: center; justify-content: space-between;">
-                            <div>
-                                <span style="color: var(--text-muted); font-size: 0.85rem;">Connected:</span>
-                                <span id="whatsapp-connected-number" style="font-weight: 600; margin-left: 4px; color: var(--accent-primary);"></span>
-                            </div>
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                <span style="font-size: 0.85rem; color: var(--text-muted);">Enabled</span>
-                                <input type="checkbox" id="whatsapp-enabled-toggle" onchange="toggleWhatsAppEnabled(this.checked)" style="width: 18px; height: 18px;">
-                            </label>
-                        </div>
-                        <div style="display: flex; gap: 8px; margin-top: 12px;">
-                            <button class="integration-btn" onclick="testWhatsApp()" style="flex: 1; padding: 8px; font-size: 0.85rem; background: rgba(37, 211, 102, 0.1); border: 1px solid rgba(37, 211, 102, 0.3);">Send Test</button>
-                            <button class="integration-btn" onclick="disconnectWhatsApp()" style="flex: 1; padding: 8px; font-size: 0.85rem; background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.3); color: #ff4d4d;">Disconnect</button>
-                        </div>
-                    </div>
-                    <div class="integration-features">
-                        <span class="integration-feature">Check-ins</span>
-                        <span class="integration-feature">Water Alerts</span>
-                        <span class="integration-feature">Workouts</span>
-                        <span class="integration-feature">Summaries</span>
-                    </div>
-                </div>
-
-                <!-- Apple Health -->
-                <div class="integration-card">
-                    <div class="integration-header">
-                        <div class="integration-icon" style="background: rgba(255, 45, 85, 0.1);">❤️</div>
-                        <div class="integration-title">
-                            <h3>Apple Health</h3>
-                            <span>iOS Health Data</span>
-                        </div>
-                        <span class="integration-status coming-soon">Coming Soon</span>
-                    </div>
-                    <p class="integration-description">
-                        Sync steps, workouts, heart rate, and activity rings. Coach will verify your step counts and workout logs against Apple Health records.
-                    </p>
-                    <div class="integration-features">
-                        <span class="integration-feature">Steps</span>
-                        <span class="integration-feature">Workouts</span>
-                        <span class="integration-feature">Heart Rate</span>
-                        <span class="integration-feature">Activity Rings</span>
-                    </div>
-                    <button class="integration-btn coming-soon" disabled>Coming Soon</button>
-                </div>
-
-                <!-- Google Fit -->
-                <div class="integration-card">
-                    <div class="integration-header">
-                        <div class="integration-icon" style="background: rgba(66, 133, 244, 0.1);">🏃</div>
-                        <div class="integration-title">
-                            <h3>Google Fit</h3>
-                            <span>Android Health Data</span>
-                        </div>
-                        <span class="integration-status coming-soon">Coming Soon</span>
-                    </div>
-                    <p class="integration-description">
-                        Connect Google Fit for automatic step counting, workout tracking, and heart points. Verify your activity claims with real data.
-                    </p>
-                    <div class="integration-features">
-                        <span class="integration-feature">Steps</span>
-                        <span class="integration-feature">Heart Points</span>
-                        <span class="integration-feature">Workouts</span>
-                        <span class="integration-feature">Distance</span>
-                    </div>
-                    <button class="integration-btn coming-soon" disabled>Coming Soon</button>
-                </div>
-
-                <!-- Strava -->
-                <div class="integration-card">
-                    <div class="integration-header">
-                        <div class="integration-icon" style="background: rgba(252, 82, 0, 0.1);">🚴</div>
-                        <div class="integration-title">
-                            <h3>Strava</h3>
-                            <span>Athletic Activities</span>
-                        </div>
-                        <span class="integration-status coming-soon">Coming Soon</span>
-                    </div>
-                    <p class="integration-description">
-                        Import runs, rides, and workouts. Coach will track your athletic progress and verify exercise claims against GPS-tracked activities.
-                    </p>
-                    <div class="integration-features">
-                        <span class="integration-feature">Running</span>
-                        <span class="integration-feature">Cycling</span>
-                        <span class="integration-feature">GPS Tracking</span>
-                        <span class="integration-feature">Pace Data</span>
-                    </div>
-                    <button class="integration-btn coming-soon" disabled>Coming Soon</button>
-                </div>
-            </div>
-
-            <!-- Calendar & Schedule -->
-            <div class="integration-category">Calendar & Schedule</div>
-            <div class="integrations-grid">
-                <!-- Google Calendar -->
-                <div class="integration-card">
-                    <div class="integration-header">
-                        <div class="integration-icon" style="background: rgba(66, 133, 244, 0.1);">📅</div>
-                        <div class="integration-title">
-                            <h3>Google Calendar</h3>
-                            <span>Schedule Integration</span>
-                        </div>
-                        <span class="integration-status available">Available</span>
-                    </div>
-                    <p class="integration-description">
-                        Analyze your schedule for workout gaps. Coach finds free time slots and suggests micro-workouts that fit your busy day. No more "I didn't have time" excuses.
-                    </p>
-                    <div class="integration-features">
-                        <span class="integration-feature">Gap Analysis</span>
-                        <span class="integration-feature">Workout Scheduling</span>
-                        <span class="integration-feature">Time Blocking</span>
-                        <span class="integration-feature">Busy Detection</span>
-                    </div>
-                    <button class="integration-btn connect" onclick="connectIntegration('google_calendar')">Connect Calendar</button>
-                </div>
-
-                <!-- Outlook Calendar -->
-                <div class="integration-card">
-                    <div class="integration-header">
-                        <div class="integration-icon" style="background: rgba(0, 120, 212, 0.1);">📆</div>
-                        <div class="integration-title">
-                            <h3>Outlook Calendar</h3>
-                            <span>Microsoft 365</span>
-                        </div>
-                        <span class="integration-status coming-soon">Coming Soon</span>
-                    </div>
-                    <p class="integration-description">
-                        For Microsoft 365 users. Same gap analysis and workout scheduling as Google Calendar but synced with your Outlook schedule.
-                    </p>
-                    <div class="integration-features">
-                        <span class="integration-feature">Gap Analysis</span>
-                        <span class="integration-feature">Meeting Aware</span>
-                        <span class="integration-feature">Work Schedule</span>
-                    </div>
-                    <button class="integration-btn coming-soon" disabled>Coming Soon</button>
-                </div>
-            </div>
-
-            <!-- Nutrition & Diet -->
-            <div class="integration-category">Nutrition & Diet</div>
-            <div class="integrations-grid">
-                <!-- MyFitnessPal -->
-                <div class="integration-card">
-                    <div class="integration-header">
-                        <div class="integration-icon" style="background: rgba(0, 102, 238, 0.1);">🍎</div>
-                        <div class="integration-title">
-                            <h3>MyFitnessPal</h3>
-                            <span>Calorie Tracking</span>
-                        </div>
-                        <span class="integration-status coming-soon">Coming Soon</span>
-                    </div>
-                    <p class="integration-description">
-                        Sync your food diary and calorie intake. Coach will verify if your nutrition aligns with your weight goals and call out inconsistencies.
-                    </p>
-                    <div class="integration-features">
-                        <span class="integration-feature">Calories</span>
-                        <span class="integration-feature">Macros</span>
-                        <span class="integration-feature">Food Diary</span>
-                        <span class="integration-feature">Goal Tracking</span>
-                    </div>
-                    <button class="integration-btn coming-soon" disabled>Coming Soon</button>
-                </div>
-
-                <!-- Meal Recipe API -->
-                <div class="integration-card">
-                    <div class="integration-header">
-                        <div class="integration-icon" style="background: rgba(245, 158, 11, 0.1);">🍳</div>
-                        <div class="integration-title">
-                            <h3>Spoonacular</h3>
-                            <span>Recipe Recommendations</span>
-                        </div>
-                        <span class="integration-status available">Available</span>
-                    </div>
-                    <p class="integration-description">
-                        Get AI-powered meal recommendations based on your calorie targets, dietary restrictions, and available ingredients. Coach will suggest meals that fit your plan.
-                    </p>
-                    <div class="integration-features">
-                        <span class="integration-feature">Calorie-Based</span>
-                        <span class="integration-feature">Macro Targets</span>
-                        <span class="integration-feature">Diet Types</span>
-                        <span class="integration-feature">Ingredient Search</span>
-                    </div>
-                    <button class="integration-btn connect" onclick="connectIntegration('spoonacular')">Connect Spoonacular</button>
-                </div>
-
-                <!-- Cronometer -->
-                <div class="integration-card">
-                    <div class="integration-header">
-                        <div class="integration-icon" style="background: rgba(255, 149, 0, 0.1);">📊</div>
-                        <div class="integration-title">
-                            <h3>Cronometer</h3>
-                            <span>Detailed Nutrition</span>
-                        </div>
-                        <span class="integration-status coming-soon">Coming Soon</span>
-                    </div>
-                    <p class="integration-description">
-                        For detailed micronutrient tracking. Coach will analyze your vitamin and mineral intake alongside macros for comprehensive nutrition accountability.
-                    </p>
-                    <div class="integration-features">
-                        <span class="integration-feature">Micronutrients</span>
-                        <span class="integration-feature">Vitamins</span>
-                        <span class="integration-feature">Minerals</span>
-                        <span class="integration-feature">Biometrics</span>
-                    </div>
-                    <button class="integration-btn coming-soon" disabled>Coming Soon</button>
-                </div>
-            </div>
-
-            <!-- Body Composition -->
-            <div class="integration-category">Body Composition & Scale</div>
-            <div class="integrations-grid">
-                <!-- Withings -->
-                <div class="integration-card">
-                    <div class="integration-header">
-                        <div class="integration-icon" style="background: rgba(0, 191, 165, 0.1);">⚖️</div>
-                        <div class="integration-title">
-                            <h3>Withings</h3>
-                            <span>Smart Scale</span>
-                        </div>
-                        <span class="integration-status coming-soon">Coming Soon</span>
-                    </div>
-                    <p class="integration-description">
-                        Auto-sync weight, body fat %, muscle mass, and water weight. Coach will verify your weigh-in claims and detect if you're logging fake weights.
-                    </p>
-                    <div class="integration-features">
-                        <span class="integration-feature">Weight</span>
-                        <span class="integration-feature">Body Fat %</span>
-                        <span class="integration-feature">Muscle Mass</span>
-                        <span class="integration-feature">BMI</span>
-                    </div>
-                    <button class="integration-btn coming-soon" disabled>Coming Soon</button>
-                </div>
-
-                <!-- Renpho -->
-                <div class="integration-card">
-                    <div class="integration-header">
-                        <div class="integration-icon" style="background: rgba(147, 51, 234, 0.1);">📱</div>
-                        <div class="integration-title">
-                            <h3>Renpho</h3>
-                            <span>Smart Scale</span>
-                        </div>
-                        <span class="integration-status coming-soon">Coming Soon</span>
-                    </div>
-                    <p class="integration-description">
-                        Sync body composition data from your Renpho scale. Coach cross-references your logged weight with actual scale measurements.
-                    </p>
-                    <div class="integration-features">
-                        <span class="integration-feature">13 Body Metrics</span>
-                        <span class="integration-feature">Trend Analysis</span>
-                        <span class="integration-feature">Auto Sync</span>
-                    </div>
-                    <button class="integration-btn coming-soon" disabled>Coming Soon</button>
-                </div>
-            </div>
-
-            <!-- AI & Intelligence -->
-            <div class="integration-category">AI & Intelligence Plugins</div>
-            <div class="integrations-grid">
-                <!-- Claude MCP -->
-                <div class="integration-card connected">
-                    <div class="integration-header">
-                        <div class="integration-icon" style="background: rgba(204, 153, 102, 0.1);">🤖</div>
-                        <div class="integration-title">
-                            <h3>Claude AI</h3>
-                            <span>Core Intelligence</span>
-                        </div>
-                        <span class="integration-status connected">Connected</span>
-                    </div>
-                    <p class="integration-description">
-                        Your Spartan Coach's brain. Claude powers all conversations, plan generation, and intelligent coaching. Always connected, always learning.
-                    </p>
-                    <div class="integration-features">
-                        <span class="integration-feature">Conversation</span>
-                        <span class="integration-feature">Plan Generation</span>
-                        <span class="integration-feature">Image Analysis</span>
-                        <span class="integration-feature">Multi-Agent</span>
-                    </div>
-                    <button class="integration-btn connected">Connected</button>
-                </div>
-
-                <!-- Discrepancy Detector -->
-                <div class="integration-card">
-                    <div class="integration-header">
-                        <div class="integration-icon" style="background: rgba(239, 68, 68, 0.1);">🔍</div>
-                        <div class="integration-title">
-                            <h3>Discrepancy Detector</h3>
-                            <span>Trust Verification</span>
-                        </div>
-                        <span class="integration-status available">Available</span>
-                    </div>
-                    <p class="integration-description">
-                        AI-powered analysis that compares your manual logs against connected data sources. Flags inconsistencies like claiming 10k steps when WHOOP shows low strain.
-                    </p>
-                    <div class="integration-features">
-                        <span class="integration-feature">Log Analysis</span>
-                        <span class="integration-feature">Pattern Detection</span>
-                        <span class="integration-feature">Fraud Alert</span>
-                        <span class="integration-feature">Trend Verify</span>
-                    </div>
-                    <button class="integration-btn connect" onclick="connectIntegration('discrepancy_detector')">Enable Detector</button>
-                </div>
-            </div>
-
-            <!-- Settings & Preferences -->
-            <div class="integration-category">Settings & Preferences</div>
-            <div class="integrations-grid">
-                <!-- Timezone Settings -->
-                <div class="integration-card" id="timezone-settings-card">
-                    <div class="integration-header">
-                        <div class="integration-icon" style="background: rgba(99, 102, 241, 0.1);">🌍</div>
-                        <div class="integration-title">
-                            <h3>Timezone</h3>
-                            <span>Notification Timing</span>
-                        </div>
-                        <span class="integration-status connected" id="timezone-status">Set</span>
-                    </div>
-                    <p class="integration-description">
-                        Set your timezone so notifications, reminders, and daily resets happen at the right time for you - not server time.
-                    </p>
-                    <div style="margin: 12px 0;">
-                        <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Your Timezone:</label>
-                        <select id="timezone-select" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color); font-size: 0.9rem;" onchange="updateTimezone(this.value)">
-                            <option value="">Loading...</option>
-                        </select>
-                        <p id="timezone-current" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px;">Current: --</p>
-                    </div>
-                    <div class="integration-features">
-                        <span class="integration-feature">Reminders</span>
-                        <span class="integration-feature">Check-ins</span>
-                        <span class="integration-feature">Daily Reset</span>
-                    </div>
-                </div>
-
-                <!-- Wake/Sleep Time -->
-                <div class="integration-card">
-                    <div class="integration-header">
-                        <div class="integration-icon" style="background: rgba(245, 158, 11, 0.1);">⏰</div>
-                        <div class="integration-title">
-                            <h3>Active Hours</h3>
-                            <span>Do Not Disturb</span>
-                        </div>
-                        <span class="integration-status connected">Set</span>
-                    </div>
-                    <p class="integration-description">
-                        Set your wake and sleep times. Coach will only send notifications during your active hours.
-                    </p>
-                    <div style="margin: 12px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                        <div>
-                            <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Wake Time:</label>
-                            <input type="time" id="wake-time-input" value="07:00" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color);" onchange="updateActiveHours()">
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Sleep Time:</label>
-                            <input type="time" id="sleep-time-input" value="22:00" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color);" onchange="updateActiveHours()">
-                        </div>
-                    </div>
-                    <div class="integration-features">
-                        <span class="integration-feature">Quiet Hours</span>
-                        <span class="integration-feature">Morning Brief</span>
-                        <span class="integration-feature">Evening Summary</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Info Footer -->
-            <div style="padding: 30px 20px; text-align: center; border-top: 1px solid var(--border-color); margin-top: 20px;">
-                <p style="color: var(--text-muted); font-size: 0.8rem; margin: 0;">
-                    More integrations coming soon. Want a specific integration?<br>
-                    <a href="mailto:feedback@spartancoach.app" style="color: var(--accent-color);">Request an integration</a>
-                </p>
+        <!-- Trust But Verify Banner -->
+        <div class="trust-verify-banner">
+            <div class="icon">🔍</div>
+            <div class="content">
+                <h4>Trust But Verify Protocol</h4>
+                <p>Your Spartan Coach cross-references your manual logs with connected data sources. This ensures
+                    accountability and detects discrepancies between what you report and what actually happened. No more
+                    fooling yourself - only real progress counts.</p>
             </div>
         </div>
+
+        <!-- Activity & Movement -->
+        <div class="integration-category">Activity & Movement Tracking</div>
+        <div class="integrations-grid">
+            <!-- WHOOP -->
+            <div class="integration-card" id="whoop-integration-card">
+                <div class="integration-header">
+                    <div class="integration-icon" style="background: rgba(0, 255, 136, 0.1);">⌚</div>
+                    <div class="integration-title">
+                        <h3>WHOOP</h3>
+                        <span>Strain & Recovery</span>
+                    </div>
+                    <span class="integration-status available" id="whoop-status-badge">Available</span>
+                </div>
+                <p class="integration-description">
+                    Auto-sync strain scores, recovery metrics, sleep performance, and HRV data. Coach will verify your
+                    workout intensity claims against actual strain data.
+                </p>
+                <!-- Whoop Data Display (shown when connected) -->
+                <div id="whoop-data-display"
+                    style="display: none; margin: 12px 0; padding: 12px; background: rgba(0, 255, 136, 0.05); border-radius: 8px; border: 1px solid rgba(0, 255, 136, 0.2);">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem;">
+                        <div>
+                            <span style="color: var(--text-muted);">Recovery:</span>
+                            <span id="whoop-recovery" style="font-weight: 600; margin-left: 4px;">--</span>
+                        </div>
+                        <div>
+                            <span style="color: var(--text-muted);">Strain:</span>
+                            <span id="whoop-strain" style="font-weight: 600; margin-left: 4px;">--</span>
+                        </div>
+                        <div>
+                            <span style="color: var(--text-muted);">Sleep:</span>
+                            <span id="whoop-sleep" style="font-weight: 600; margin-left: 4px;">--</span>
+                        </div>
+                        <div>
+                            <span style="color: var(--text-muted);">HRV:</span>
+                            <span id="whoop-hrv" style="font-weight: 600; margin-left: 4px;">--</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 8px; font-size: 0.75rem; color: var(--text-muted);">
+                        Last sync: <span id="whoop-last-sync">--</span>
+                    </div>
+                </div>
+                <div class="integration-features">
+                    <span class="integration-feature">Strain Score</span>
+                    <span class="integration-feature">Recovery %</span>
+                    <span class="integration-feature">HRV</span>
+                    <span class="integration-feature">Sleep Quality</span>
+                </div>
+                <button class="integration-btn connect" id="whoop-connect-btn" onclick="connectWhoop()">Connect
+                    WHOOP</button>
+            </div>
+
+            <!-- WhatsApp Notifications -->
+            <div class="integration-card" id="whatsapp-integration-card">
+                <div class="integration-header">
+                    <div class="integration-icon" style="background: rgba(37, 211, 102, 0.1);">📱</div>
+                    <div class="integration-title">
+                        <h3>WhatsApp</h3>
+                        <span>Push Notifications</span>
+                    </div>
+                    <span class="integration-status available" id="whatsapp-status-badge">Available</span>
+                </div>
+                <p class="integration-description">
+                    Get proactive coaching reminders, water alerts, workout notifications, and daily summaries delivered
+                    directly to WhatsApp.
+                </p>
+                <!-- WhatsApp Connection Form (shown when disconnected) -->
+                <div id="whatsapp-connect-form" style="margin: 12px 0;">
+                    <div style="display: flex; gap: 8px;">
+                        <input type="tel" id="whatsapp-phone-input" placeholder="+1234567890"
+                            style="flex: 1; padding: 10px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text-primary); font-size: 0.9rem;">
+                        <button class="integration-btn connect" onclick="connectWhatsApp()"
+                            style="padding: 10px 16px;">Connect</button>
+                    </div>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;">
+                        First, send "join <your-sandbox-code>" to +14155238886 on WhatsApp
+                    </p>
+                </div>
+                <!-- WhatsApp Connected State (shown when connected) -->
+                <div id="whatsapp-connected-state"
+                    style="display: none; margin: 12px 0; padding: 12px; background: rgba(37, 211, 102, 0.05); border-radius: 8px; border: 1px solid rgba(37, 211, 102, 0.2);">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <span style="color: var(--text-muted); font-size: 0.85rem;">Connected:</span>
+                            <span id="whatsapp-connected-number"
+                                style="font-weight: 600; margin-left: 4px; color: var(--accent-primary);"></span>
+                        </div>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <span style="font-size: 0.85rem; color: var(--text-muted);">Enabled</span>
+                            <input type="checkbox" id="whatsapp-enabled-toggle"
+                                onchange="toggleWhatsAppEnabled(this.checked)" style="width: 18px; height: 18px;">
+                        </label>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 12px;">
+                        <button class="integration-btn" onclick="testWhatsApp()"
+                            style="flex: 1; padding: 8px; font-size: 0.85rem; background: rgba(37, 211, 102, 0.1); border: 1px solid rgba(37, 211, 102, 0.3);">Send
+                            Test</button>
+                        <button class="integration-btn" onclick="disconnectWhatsApp()"
+                            style="flex: 1; padding: 8px; font-size: 0.85rem; background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.3); color: #ff4d4d;">Disconnect</button>
+                    </div>
+                </div>
+                <div class="integration-features">
+                    <span class="integration-feature">Check-ins</span>
+                    <span class="integration-feature">Water Alerts</span>
+                    <span class="integration-feature">Workouts</span>
+                    <span class="integration-feature">Summaries</span>
+                </div>
+            </div>
+
+            <!-- Apple Health -->
+            <div class="integration-card">
+                <div class="integration-header">
+                    <div class="integration-icon" style="background: rgba(255, 45, 85, 0.1);">❤️</div>
+                    <div class="integration-title">
+                        <h3>Apple Health</h3>
+                        <span>iOS Health Data</span>
+                    </div>
+                    <span class="integration-status coming-soon">Coming Soon</span>
+                </div>
+                <p class="integration-description">
+                    Sync steps, workouts, heart rate, and activity rings. Coach will verify your step counts and workout
+                    logs against Apple Health records.
+                </p>
+                <div class="integration-features">
+                    <span class="integration-feature">Steps</span>
+                    <span class="integration-feature">Workouts</span>
+                    <span class="integration-feature">Heart Rate</span>
+                    <span class="integration-feature">Activity Rings</span>
+                </div>
+                <button class="integration-btn coming-soon" disabled>Coming Soon</button>
+            </div>
+
+            <!-- Google Fit -->
+            <div class="integration-card">
+                <div class="integration-header">
+                    <div class="integration-icon" style="background: rgba(66, 133, 244, 0.1);">🏃</div>
+                    <div class="integration-title">
+                        <h3>Google Fit</h3>
+                        <span>Android Health Data</span>
+                    </div>
+                    <span class="integration-status coming-soon">Coming Soon</span>
+                </div>
+                <p class="integration-description">
+                    Connect Google Fit for automatic step counting, workout tracking, and heart points. Verify your
+                    activity claims with real data.
+                </p>
+                <div class="integration-features">
+                    <span class="integration-feature">Steps</span>
+                    <span class="integration-feature">Heart Points</span>
+                    <span class="integration-feature">Workouts</span>
+                    <span class="integration-feature">Distance</span>
+                </div>
+                <button class="integration-btn coming-soon" disabled>Coming Soon</button>
+            </div>
+
+            <!-- Strava -->
+            <div class="integration-card">
+                <div class="integration-header">
+                    <div class="integration-icon" style="background: rgba(252, 82, 0, 0.1);">🚴</div>
+                    <div class="integration-title">
+                        <h3>Strava</h3>
+                        <span>Athletic Activities</span>
+                    </div>
+                    <span class="integration-status coming-soon">Coming Soon</span>
+                </div>
+                <p class="integration-description">
+                    Import runs, rides, and workouts. Coach will track your athletic progress and verify exercise claims
+                    against GPS-tracked activities.
+                </p>
+                <div class="integration-features">
+                    <span class="integration-feature">Running</span>
+                    <span class="integration-feature">Cycling</span>
+                    <span class="integration-feature">GPS Tracking</span>
+                    <span class="integration-feature">Pace Data</span>
+                </div>
+                <button class="integration-btn coming-soon" disabled>Coming Soon</button>
+            </div>
+        </div>
+
+        <!-- Calendar & Schedule -->
+        <div class="integration-category">Calendar & Schedule</div>
+        <div class="integrations-grid">
+            <!-- Google Calendar -->
+            <div class="integration-card">
+                <div class="integration-header">
+                    <div class="integration-icon" style="background: rgba(66, 133, 244, 0.1);">📅</div>
+                    <div class="integration-title">
+                        <h3>Google Calendar</h3>
+                        <span>Schedule Integration</span>
+                    </div>
+                    <span class="integration-status available">Available</span>
+                </div>
+                <p class="integration-description">
+                    Analyze your schedule for workout gaps. Coach finds free time slots and suggests micro-workouts that
+                    fit your busy day. No more "I didn't have time" excuses.
+                </p>
+                <div class="integration-features">
+                    <span class="integration-feature">Gap Analysis</span>
+                    <span class="integration-feature">Workout Scheduling</span>
+                    <span class="integration-feature">Time Blocking</span>
+                    <span class="integration-feature">Busy Detection</span>
+                </div>
+                <button class="integration-btn connect" onclick="connectIntegration('google_calendar')">Connect
+                    Calendar</button>
+            </div>
+
+            <!-- Outlook Calendar -->
+            <div class="integration-card">
+                <div class="integration-header">
+                    <div class="integration-icon" style="background: rgba(0, 120, 212, 0.1);">📆</div>
+                    <div class="integration-title">
+                        <h3>Outlook Calendar</h3>
+                        <span>Microsoft 365</span>
+                    </div>
+                    <span class="integration-status coming-soon">Coming Soon</span>
+                </div>
+                <p class="integration-description">
+                    For Microsoft 365 users. Same gap analysis and workout scheduling as Google Calendar but synced with
+                    your Outlook schedule.
+                </p>
+                <div class="integration-features">
+                    <span class="integration-feature">Gap Analysis</span>
+                    <span class="integration-feature">Meeting Aware</span>
+                    <span class="integration-feature">Work Schedule</span>
+                </div>
+                <button class="integration-btn coming-soon" disabled>Coming Soon</button>
+            </div>
+        </div>
+
+        <!-- Nutrition & Diet -->
+        <div class="integration-category">Nutrition & Diet</div>
+        <div class="integrations-grid">
+            <!-- MyFitnessPal -->
+            <div class="integration-card">
+                <div class="integration-header">
+                    <div class="integration-icon" style="background: rgba(0, 102, 238, 0.1);">🍎</div>
+                    <div class="integration-title">
+                        <h3>MyFitnessPal</h3>
+                        <span>Calorie Tracking</span>
+                    </div>
+                    <span class="integration-status coming-soon">Coming Soon</span>
+                </div>
+                <p class="integration-description">
+                    Sync your food diary and calorie intake. Coach will verify if your nutrition aligns with your weight
+                    goals and call out inconsistencies.
+                </p>
+                <div class="integration-features">
+                    <span class="integration-feature">Calories</span>
+                    <span class="integration-feature">Macros</span>
+                    <span class="integration-feature">Food Diary</span>
+                    <span class="integration-feature">Goal Tracking</span>
+                </div>
+                <button class="integration-btn coming-soon" disabled>Coming Soon</button>
+            </div>
+
+            <!-- Meal Recipe API -->
+            <div class="integration-card">
+                <div class="integration-header">
+                    <div class="integration-icon" style="background: rgba(245, 158, 11, 0.1);">🍳</div>
+                    <div class="integration-title">
+                        <h3>Spoonacular</h3>
+                        <span>Recipe Recommendations</span>
+                    </div>
+                    <span class="integration-status available">Available</span>
+                </div>
+                <p class="integration-description">
+                    Get AI-powered meal recommendations based on your calorie targets, dietary restrictions, and
+                    available ingredients. Coach will suggest meals that fit your plan.
+                </p>
+                <div class="integration-features">
+                    <span class="integration-feature">Calorie-Based</span>
+                    <span class="integration-feature">Macro Targets</span>
+                    <span class="integration-feature">Diet Types</span>
+                    <span class="integration-feature">Ingredient Search</span>
+                </div>
+                <button class="integration-btn connect" onclick="connectIntegration('spoonacular')">Connect
+                    Spoonacular</button>
+            </div>
+
+            <!-- Cronometer -->
+            <div class="integration-card">
+                <div class="integration-header">
+                    <div class="integration-icon" style="background: rgba(255, 149, 0, 0.1);">📊</div>
+                    <div class="integration-title">
+                        <h3>Cronometer</h3>
+                        <span>Detailed Nutrition</span>
+                    </div>
+                    <span class="integration-status coming-soon">Coming Soon</span>
+                </div>
+                <p class="integration-description">
+                    For detailed micronutrient tracking. Coach will analyze your vitamin and mineral intake alongside
+                    macros for comprehensive nutrition accountability.
+                </p>
+                <div class="integration-features">
+                    <span class="integration-feature">Micronutrients</span>
+                    <span class="integration-feature">Vitamins</span>
+                    <span class="integration-feature">Minerals</span>
+                    <span class="integration-feature">Biometrics</span>
+                </div>
+                <button class="integration-btn coming-soon" disabled>Coming Soon</button>
+            </div>
+        </div>
+
+        <!-- Body Composition -->
+        <div class="integration-category">Body Composition & Scale</div>
+        <div class="integrations-grid">
+            <!-- Withings -->
+            <div class="integration-card">
+                <div class="integration-header">
+                    <div class="integration-icon" style="background: rgba(0, 191, 165, 0.1);">⚖️</div>
+                    <div class="integration-title">
+                        <h3>Withings</h3>
+                        <span>Smart Scale</span>
+                    </div>
+                    <span class="integration-status coming-soon">Coming Soon</span>
+                </div>
+                <p class="integration-description">
+                    Auto-sync weight, body fat %, muscle mass, and water weight. Coach will verify your weigh-in claims
+                    and detect if you're logging fake weights.
+                </p>
+                <div class="integration-features">
+                    <span class="integration-feature">Weight</span>
+                    <span class="integration-feature">Body Fat %</span>
+                    <span class="integration-feature">Muscle Mass</span>
+                    <span class="integration-feature">BMI</span>
+                </div>
+                <button class="integration-btn coming-soon" disabled>Coming Soon</button>
+            </div>
+
+            <!-- Renpho -->
+            <div class="integration-card">
+                <div class="integration-header">
+                    <div class="integration-icon" style="background: rgba(147, 51, 234, 0.1);">📱</div>
+                    <div class="integration-title">
+                        <h3>Renpho</h3>
+                        <span>Smart Scale</span>
+                    </div>
+                    <span class="integration-status coming-soon">Coming Soon</span>
+                </div>
+                <p class="integration-description">
+                    Sync body composition data from your Renpho scale. Coach cross-references your logged weight with
+                    actual scale measurements.
+                </p>
+                <div class="integration-features">
+                    <span class="integration-feature">13 Body Metrics</span>
+                    <span class="integration-feature">Trend Analysis</span>
+                    <span class="integration-feature">Auto Sync</span>
+                </div>
+                <button class="integration-btn coming-soon" disabled>Coming Soon</button>
+            </div>
+        </div>
+
+        <!-- AI & Intelligence -->
+        <div class="integration-category">AI & Intelligence Plugins</div>
+        <div class="integrations-grid">
+            <!-- Claude MCP -->
+            <div class="integration-card connected">
+                <div class="integration-header">
+                    <div class="integration-icon" style="background: rgba(204, 153, 102, 0.1);">🤖</div>
+                    <div class="integration-title">
+                        <h3>Claude AI</h3>
+                        <span>Core Intelligence</span>
+                    </div>
+                    <span class="integration-status connected">Connected</span>
+                </div>
+                <p class="integration-description">
+                    Your Spartan Coach's brain. Claude powers all conversations, plan generation, and intelligent
+                    coaching. Always connected, always learning.
+                </p>
+                <div class="integration-features">
+                    <span class="integration-feature">Conversation</span>
+                    <span class="integration-feature">Plan Generation</span>
+                    <span class="integration-feature">Image Analysis</span>
+                    <span class="integration-feature">Multi-Agent</span>
+                </div>
+                <button class="integration-btn connected">Connected</button>
+            </div>
+
+            <!-- Discrepancy Detector -->
+            <div class="integration-card">
+                <div class="integration-header">
+                    <div class="integration-icon" style="background: rgba(239, 68, 68, 0.1);">🔍</div>
+                    <div class="integration-title">
+                        <h3>Discrepancy Detector</h3>
+                        <span>Trust Verification</span>
+                    </div>
+                    <span class="integration-status available">Available</span>
+                </div>
+                <p class="integration-description">
+                    AI-powered analysis that compares your manual logs against connected data sources. Flags
+                    inconsistencies like claiming 10k steps when WHOOP shows low strain.
+                </p>
+                <div class="integration-features">
+                    <span class="integration-feature">Log Analysis</span>
+                    <span class="integration-feature">Pattern Detection</span>
+                    <span class="integration-feature">Fraud Alert</span>
+                    <span class="integration-feature">Trend Verify</span>
+                </div>
+                <button class="integration-btn connect" onclick="connectIntegration('discrepancy_detector')">Enable
+                    Detector</button>
+            </div>
+        </div>
+
+        <!-- Settings & Preferences -->
+        <div class="integration-category">Settings & Preferences</div>
+        <div class="integrations-grid">
+            <!-- Timezone Settings -->
+            <div class="integration-card" id="timezone-settings-card">
+                <div class="integration-header">
+                    <div class="integration-icon" style="background: rgba(99, 102, 241, 0.1);">🌍</div>
+                    <div class="integration-title">
+                        <h3>Timezone</h3>
+                        <span>Notification Timing</span>
+                    </div>
+                    <span class="integration-status connected" id="timezone-status">Set</span>
+                </div>
+                <p class="integration-description">
+                    Set your timezone so notifications, reminders, and daily resets happen at the right time for you -
+                    not server time.
+                </p>
+                <div style="margin: 12px 0;">
+                    <label
+                        style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Your
+                        Timezone:</label>
+                    <select id="timezone-select"
+                        style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color); font-size: 0.9rem;"
+                        onchange="updateTimezone(this.value)">
+                        <option value="">Loading...</option>
+                    </select>
+                    <p id="timezone-current" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px;">
+                        Current: --</p>
+                </div>
+                <div class="integration-features">
+                    <span class="integration-feature">Reminders</span>
+                    <span class="integration-feature">Check-ins</span>
+                    <span class="integration-feature">Daily Reset</span>
+                </div>
+            </div>
+
+            <!-- Wake/Sleep Time -->
+            <div class="integration-card">
+                <div class="integration-header">
+                    <div class="integration-icon" style="background: rgba(245, 158, 11, 0.1);">⏰</div>
+                    <div class="integration-title">
+                        <h3>Active Hours</h3>
+                        <span>Do Not Disturb</span>
+                    </div>
+                    <span class="integration-status connected">Set</span>
+                </div>
+                <p class="integration-description">
+                    Set your wake and sleep times. Coach will only send notifications during your active hours.
+                </p>
+                <div style="margin: 12px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div>
+                        <label
+                            style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Wake
+                            Time:</label>
+                        <input type="time" id="wake-time-input" value="07:00"
+                            style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color);"
+                            onchange="updateActiveHours()">
+                    </div>
+                    <div>
+                        <label
+                            style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Sleep
+                            Time:</label>
+                        <input type="time" id="sleep-time-input" value="22:00"
+                            style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color);"
+                            onchange="updateActiveHours()">
+                    </div>
+                </div>
+                <div class="integration-features">
+                    <span class="integration-feature">Quiet Hours</span>
+                    <span class="integration-feature">Morning Brief</span>
+                    <span class="integration-feature">Evening Summary</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Footer -->
+        <div
+            style="padding: 30px 20px; text-align: center; border-top: 1px solid var(--border-color); margin-top: 20px;">
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin: 0;">
+                More integrations coming soon. Want a specific integration?<br>
+                <a href="mailto:feedback@spartancoach.app" style="color: var(--accent-color);">Request an
+                    integration</a>
+            </p>
+        </div>
+    </div>
 
     <script>
         // Use relative URL for API - works in both dev and production
@@ -3354,14 +3560,16 @@
                     const data = await response.json();
                     if (data.master_plan && Object.keys(data.master_plan).length > 0) {
                         let planHtml = '';
-                        if (data.master_plan.summary) {
+                        if (data.master_plan.plan_text) {
+                            planHtml = formatPlanText(data.master_plan.plan_text);
+                        } else if (data.master_plan.summary) {
                             planHtml += `<div style="margin-bottom: 16px;">${formatPlanText(data.master_plan.summary)}</div>`;
-                        }
-                        if (data.master_plan.phases) {
-                            planHtml += '<strong style="color: var(--accent-color);">Phases:</strong><br>';
-                            data.master_plan.phases.forEach(phase => {
-                                planHtml += `<div style="margin: 8px 0; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 6px;">${phase}</div>`;
-                            });
+                            if (data.master_plan.phases) {
+                                planHtml += '<strong style="color: var(--accent-color);">Phases:</strong><br>';
+                                data.master_plan.phases.forEach(phase => {
+                                    planHtml += `<div style="margin: 8px 0; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 6px;">${phase}</div>`;
+                                });
+                            }
                         }
                         content.innerHTML = planHtml || '<p>Master plan data available</p>';
                     } else {

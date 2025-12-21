@@ -22,7 +22,7 @@ WHOOP_REDIRECT_URI = os.getenv("WHOOP_REDIRECT_URI", "http://localhost:8000/auth
 # Whoop API URLs (v2)
 WHOOP_AUTH_URL = "https://api.prod.whoop.com/oauth/oauth2/auth"
 WHOOP_TOKEN_URL = "https://api.prod.whoop.com/oauth/oauth2/token"
-WHOOP_API_BASE = "https://api.prod.whoop.com/developer/v1"
+WHOOP_API_BASE = "https://api.prod.whoop.com/developer/v2"
 
 # Scopes we need
 WHOOP_SCOPES = [
@@ -116,6 +116,7 @@ class WhoopService:
         }
 
         url = f"{WHOOP_API_BASE}{endpoint}"
+        logger.info(f"Making request to URL: {url} (Base: {WHOOP_API_BASE})")
         response = await self.client.get(url, headers=headers, params=params)
 
         if response.status_code == 401:
@@ -126,7 +127,9 @@ class WhoopService:
             response = await self.client.get(url, headers=headers, params=params)
 
         if response.status_code == 200:
-            return response.json()
+            data = response.json()
+            logger.info(f"Whoop API response for {endpoint}: {str(data)[:200]}...")
+            return data
         else:
             logger.error(f"API request failed: {response.status_code} - {response.text}")
             raise Exception(f"API request failed: {response.status_code}")
@@ -166,9 +169,9 @@ class WhoopService:
 
         return await self._make_request("/recovery", params)
 
-    async def get_latest_recovery(self) -> Optional[Dict[str, Any]]:
+    async def get_latest_recovery(self, start_date: str = None) -> Optional[Dict[str, Any]]:
         """Get the most recent recovery data."""
-        data = await self.get_recovery(limit=1)
+        data = await self.get_recovery(start_date=start_date, limit=1)
         records = data.get("records", [])
         return records[0] if records else None
 
@@ -198,9 +201,9 @@ class WhoopService:
 
         return await self._make_request("/activity/sleep", params)
 
-    async def get_latest_sleep(self) -> Optional[Dict[str, Any]]:
+    async def get_latest_sleep(self, start_date: str = None) -> Optional[Dict[str, Any]]:
         """Get the most recent sleep data."""
-        data = await self.get_sleep(limit=1)
+        data = await self.get_sleep(start_date=start_date, limit=1)
         records = data.get("records", [])
         return records[0] if records else None
 
@@ -279,9 +282,11 @@ class WhoopService:
             "insights": []
         }
 
+        today = datetime.now().strftime("%Y-%m-%dT00:00:00.000Z")
+
         try:
             # Get latest recovery
-            recovery = await self.get_latest_recovery()
+            recovery = await self.get_latest_recovery(start_date=today)
             if recovery:
                 score_data = recovery.get("score", {})
                 summary["recovery"] = {
@@ -297,7 +302,7 @@ class WhoopService:
 
         try:
             # Get latest sleep
-            sleep = await self.get_latest_sleep()
+            sleep = await self.get_latest_sleep(start_date=today)
             if sleep:
                 score_data = sleep.get("score", {})
                 summary["sleep"] = {

@@ -1,8 +1,9 @@
 from google.adk.agents import Agent
+from spartan_phalanx.config import get_model
 
 pattern_assassin = Agent(
     name="pattern_assassin",
-    model="gemini-2.0-flash",
+    model=get_model(),
     description="Analyzes habits, streaks, and slumps.",
     instruction="""
     You are the PATTERN ASSASSIN. You are the Scout of the Phalanx.

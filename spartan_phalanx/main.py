@@ -45,8 +45,8 @@ CONVERSATION FLOW
 ═══════════════════════════════════════════════════════════════
 
 **PHASE 1: ONBOARDING** (No profile yet)
-- User provides profile details -> Route to planner_agent for MASTER PLAN creation
-- Master Plan includes feasibility analysis, calculations, and strategy
+- User provides profile details -> Route to **planner_agent** to generate the Master Plan
+- The planner_agent has the format and will calculate BMR/TDEE
 
 **PHASE 2: PLAN ACCEPTANCE** (Master plan exists, not accepted)
 - User says "ACCEPT" / "accept" / "yes" / "lock it" / "let's do it" / "I'm ready" / "start" ->
@@ -109,6 +109,7 @@ ROUTING RULES
 **Use get_daily_plan TOOL directly:**
 - "daily plan" / "today's plan" / "what's my plan"
 - DO NOT route to planner_agent for these - use the tool to retrieve stored plan
+- **CRITICAL:** If `get_daily_plan` returns `NO_DAILY_PLAN_GENERATED`, you MUST route to `planner_agent` to generate the plan.
 
 **Route to planner_agent:**
 - Profile/plan creation (Master Plan)

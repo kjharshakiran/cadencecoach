@@ -17,6 +17,7 @@ A comprehensive fitness accountability application built with Google Agent Devel
 9. [Scheduled Jobs](#scheduled-jobs)
 10. [Environment Configuration](#environment-configuration)
 11. [Data Flow](#data-flow)
+12. [Deployment](#deployment)
 
 ---
 
@@ -1095,3 +1096,26 @@ Server runs at: `http://localhost:8000`
 ---
 
 *Last updated: December 2025*
+
+---
+
+## Deployment
+
+The Spartan Coach is designed to be deployed on Google Cloud Platform (GCP) using Cloud Run.
+
+### Quick Start
+
+The repository includes a helper script `deploy.sh` that automates the deployment process.
+
+```bash
+./deploy.sh
+```
+
+For detailed deployment instructions, including prerequisites, manual deployment steps, and environment configuration, please refer to the [Deployment Guide](DEPLOYMENT.md).
+
+### Infrastructure
+
+- **Compute**: Google Cloud Run (Serverless container)
+- **Database**: SQLite (Development) / Cloud SQL (Production)
+- **Build**: Google Cloud Build
+- **Registry**: Google Container Registry (GCR)

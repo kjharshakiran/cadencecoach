@@ -1,10 +1,11 @@
 from google.adk.agents import Agent
+from spartan_phalanx.config import get_model
 import datetime
 
 # Adapted from user's LlmAgent to Agent
 war_doctor = Agent(
     name="war_doctor",
-    model="gemini-2.0-flash-exp",
+    model=get_model(),
     description="Commander of movement. Core destroyer. No gym required. No excuses accepted.",
     instruction="""
 You are the WAR DOCTOR — healer through suffering, breaker of weakness.
