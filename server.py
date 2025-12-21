@@ -4,6 +4,7 @@ import json
 import logging
 import secrets
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, Depends, Request, Response, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -1382,7 +1383,8 @@ def get_or_create_session_id(user_id: str):
         "notification_settings": {
             "wake_time": "07:00",
             "sleep_time": "22:00",
-            "enable_push": True
+            "enable_push": True,
+            "timezone": "America/New_York"  # Default timezone
         }
     }
     new_session = session_service.create_session(
@@ -1403,6 +1405,49 @@ def get_all_registered_users() -> list:
     except Exception as e:
         logger.error(f"Error getting registered users: {e}")
         return []
+
+
+def get_user_local_time(timezone_str: str) -> datetime:
+    """Get current time in user's timezone."""
+    try:
+        tz = ZoneInfo(timezone_str)
+        return datetime.now(tz)
+    except Exception:
+        # Fallback to server time if timezone is invalid
+        return datetime.now()
+
+
+def should_notify_at_hour(state: dict, target_hour: int) -> bool:
+    """Check if notification should be sent based on user's timezone and wake/sleep times."""
+    notification_settings = state.get("notification_settings", {})
+    timezone_str = notification_settings.get("timezone", "America/New_York")
+    wake_time = notification_settings.get("wake_time", "07:00")
+    sleep_time = notification_settings.get("sleep_time", "22:00")
+
+    try:
+        user_time = get_user_local_time(timezone_str)
+        user_hour = user_time.hour
+
+        # Parse wake/sleep times
+        wake_hour = int(wake_time.split(":")[0])
+        sleep_hour = int(sleep_time.split(":")[0])
+
+        # Check if current user hour matches target AND within wake/sleep window
+        if user_hour == target_hour:
+            if wake_hour <= user_hour < sleep_hour:
+                return True
+        return False
+    except Exception as e:
+        logger.error(f"Error checking notification time: {e}")
+        return False
+
+
+def get_user_current_hour(state: dict) -> int:
+    """Get the current hour in user's timezone."""
+    notification_settings = state.get("notification_settings", {})
+    timezone_str = notification_settings.get("timezone", "America/New_York")
+    user_time = get_user_local_time(timezone_str)
+    return user_time.hour
 
 
 @app.post("/api/chat", response_model=ChatResponse)
@@ -2544,6 +2589,7 @@ class NotificationSettings(BaseModel):
     wake_time: Optional[str] = None
     sleep_time: Optional[str] = None
     enable_push: Optional[bool] = None
+    timezone: Optional[str] = None
 
 
 @app.post("/api/notifications/settings")
@@ -2557,7 +2603,8 @@ async def update_notification_settings(request: Request, settings: NotificationS
     current_settings = state.get("notification_settings", {
         "wake_time": "07:00",
         "sleep_time": "22:00",
-        "enable_push": True
+        "enable_push": True,
+        "timezone": "America/New_York"
     })
 
     if settings.wake_time:
@@ -2566,6 +2613,13 @@ async def update_notification_settings(request: Request, settings: NotificationS
         current_settings["sleep_time"] = settings.sleep_time
     if settings.enable_push is not None:
         current_settings["enable_push"] = settings.enable_push
+    if settings.timezone:
+        # Validate timezone
+        try:
+            ZoneInfo(settings.timezone)
+            current_settings["timezone"] = settings.timezone
+        except Exception:
+            pass  # Invalid timezone, keep existing
 
     state["notification_settings"] = current_settings
     force_update_state(session_id, state)
@@ -2584,8 +2638,45 @@ async def get_notification_settings(request: Request):
     return state.get("notification_settings", {
         "wake_time": "07:00",
         "sleep_time": "22:00",
-        "enable_push": True
+        "enable_push": True,
+        "timezone": "America/New_York"
     })
+
+
+@app.get("/api/timezones")
+async def get_timezones():
+    """Get list of common timezones for selection."""
+    # Common timezones grouped by region
+    return {
+        "timezones": [
+            {"value": "America/New_York", "label": "Eastern Time (US)"},
+            {"value": "America/Chicago", "label": "Central Time (US)"},
+            {"value": "America/Denver", "label": "Mountain Time (US)"},
+            {"value": "America/Los_Angeles", "label": "Pacific Time (US)"},
+            {"value": "America/Phoenix", "label": "Arizona (US)"},
+            {"value": "America/Anchorage", "label": "Alaska (US)"},
+            {"value": "Pacific/Honolulu", "label": "Hawaii (US)"},
+            {"value": "America/Toronto", "label": "Eastern Time (Canada)"},
+            {"value": "America/Vancouver", "label": "Pacific Time (Canada)"},
+            {"value": "Europe/London", "label": "London (UK)"},
+            {"value": "Europe/Paris", "label": "Paris (France)"},
+            {"value": "Europe/Berlin", "label": "Berlin (Germany)"},
+            {"value": "Europe/Rome", "label": "Rome (Italy)"},
+            {"value": "Europe/Madrid", "label": "Madrid (Spain)"},
+            {"value": "Europe/Amsterdam", "label": "Amsterdam (Netherlands)"},
+            {"value": "Asia/Tokyo", "label": "Tokyo (Japan)"},
+            {"value": "Asia/Shanghai", "label": "Shanghai (China)"},
+            {"value": "Asia/Hong_Kong", "label": "Hong Kong"},
+            {"value": "Asia/Singapore", "label": "Singapore"},
+            {"value": "Asia/Seoul", "label": "Seoul (Korea)"},
+            {"value": "Asia/Kolkata", "label": "India (IST)"},
+            {"value": "Asia/Dubai", "label": "Dubai (UAE)"},
+            {"value": "Australia/Sydney", "label": "Sydney (Australia)"},
+            {"value": "Australia/Melbourne", "label": "Melbourne (Australia)"},
+            {"value": "Australia/Perth", "label": "Perth (Australia)"},
+            {"value": "Pacific/Auckland", "label": "Auckland (New Zealand)"},
+        ]
+    }
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -2812,9 +2903,28 @@ async def _proactive_checkin_for_user(user_id: str):
         logger.debug(f"User {user_id}: Plan not accepted, skipping check-in.")
         return
 
-    now = datetime.now()
+    # Get user's local time based on their timezone
+    notification_settings = state.get("notification_settings", {})
+    timezone_str = notification_settings.get("timezone", "America/New_York")
+    now = get_user_local_time(timezone_str)
     current_hour = now.hour
-    logger.info(f"Executing proactive check-in at {now.strftime('%H:%M')} for user {user_id}")
+
+    # Check if current hour is a check-in hour in user's timezone
+    checkin_hours = [7, 9, 11, 13, 15, 17, 19, 21]
+    if current_hour not in checkin_hours:
+        logger.debug(f"User {user_id}: Hour {current_hour} not a check-in hour in {timezone_str}")
+        return
+
+    # Check wake/sleep window
+    wake_time = notification_settings.get("wake_time", "07:00")
+    sleep_time = notification_settings.get("sleep_time", "22:00")
+    wake_hour = int(wake_time.split(":")[0])
+    sleep_hour = int(sleep_time.split(":")[0])
+    if not (wake_hour <= current_hour < sleep_hour):
+        logger.debug(f"User {user_id}: Hour {current_hour} outside wake/sleep window")
+        return
+
+    logger.info(f"Executing proactive check-in at {now.strftime('%H:%M')} ({timezone_str}) for user {user_id}")
 
     # Get user's motivation (reason) for personalized messaging
     warrior_profile = state.get("warrior_profile", {})
@@ -3039,6 +3149,25 @@ async def _water_reminder_for_user(user_id: str):
     if not state.get("plan_accepted"):
         return
 
+    # Get user's local time based on their timezone
+    notification_settings = state.get("notification_settings", {})
+    timezone_str = notification_settings.get("timezone", "America/New_York")
+    now = get_user_local_time(timezone_str)
+    current_hour = now.hour
+
+    # Check if current hour is a water reminder hour in user's timezone
+    water_hours = [8, 10, 12, 14, 16, 18, 20]
+    if current_hour not in water_hours:
+        return
+
+    # Check wake/sleep window
+    wake_time = notification_settings.get("wake_time", "07:00")
+    sleep_time = notification_settings.get("sleep_time", "22:00")
+    wake_hour = int(wake_time.split(":")[0])
+    sleep_hour = int(sleep_time.split(":")[0])
+    if not (wake_hour <= current_hour < sleep_hour):
+        return
+
     water_intake = state.get("water_intake", {})
     glasses = water_intake.get("glasses", 0)
     last_logged = water_intake.get("last_logged")
@@ -3058,7 +3187,7 @@ async def _water_reminder_for_user(user_id: str):
             needs_reminder = True
 
     if needs_reminder:
-        now = datetime.now()
+        # Use user's local time (already set above)
         warrior_profile = state.get("warrior_profile", {})
         user_name = warrior_profile.get("name", "Warrior")
         user_reason = warrior_profile.get("reason", "")
@@ -3115,11 +3244,28 @@ async def _schedule_reminder_for_user(user_id: str):
     if not state.get("plan_accepted"):
         return
 
+    # Get user's local time based on their timezone
+    notification_settings = state.get("notification_settings", {})
+    timezone_str = notification_settings.get("timezone", "America/New_York")
+    now = get_user_local_time(timezone_str)
+    current_hour = now.hour
+
+    # Check if within schedule reminder window (7AM-10PM in user's timezone)
+    if not (7 <= current_hour < 22):
+        return
+
+    # Check wake/sleep window
+    wake_time = notification_settings.get("wake_time", "07:00")
+    sleep_time = notification_settings.get("sleep_time", "22:00")
+    wake_hour = int(wake_time.split(":")[0])
+    sleep_hour = int(sleep_time.split(":")[0])
+    if not (wake_hour <= current_hour < sleep_hour):
+        return
+
     daily_schedule = state.get("daily_schedule", [])
     if not daily_schedule:
         return
 
-    now = datetime.now()
     current_time = now.strftime("%H:%M")
 
     # Get user's motivation for personalized reminders
@@ -3234,11 +3380,11 @@ async def scheduled_checkin():
 async def midnight_reset():
     """Reset daily goals at midnight and archive previous day's progress for ALL users."""
     logger.info("=" * 60)
-    logger.info("MIDNIGHT RESET TRIGGERED")
+    logger.info("MIDNIGHT RESET CHECK")
     logger.info("=" * 60)
 
     users = get_all_registered_users()
-    logger.info(f"Processing midnight reset for {len(users)} users")
+    logger.info(f"Checking midnight reset for {len(users)} users")
 
     for user_id in users:
         try:
@@ -3247,21 +3393,35 @@ async def midnight_reset():
             state = session.state
 
             if not state.get("plan_accepted"):
-                logger.info(f"User {user_id}: Plan not accepted, skipping.")
                 continue
 
-            await _reset_user_daily(user_id, session_id, state)
+            # Check if it's midnight (0:00-0:59) in user's timezone
+            notification_settings = state.get("notification_settings", {})
+            timezone_str = notification_settings.get("timezone", "America/New_York")
+            user_time = get_user_local_time(timezone_str)
+
+            if user_time.hour != 0:
+                continue  # Not midnight for this user
+
+            # Check if we already reset today (prevent duplicate resets)
+            last_reset = state.get("last_daily_reset")
+            today_str = user_time.strftime("%Y-%m-%d")
+            if last_reset == today_str:
+                continue  # Already reset today
+
+            logger.info(f"User {user_id}: Midnight in {timezone_str}, triggering reset")
+            state["last_daily_reset"] = today_str
+            await _reset_user_daily(user_id, session_id, state, timezone_str)
         except Exception as e:
             logger.error(f"Error resetting user {user_id}: {e}")
 
-async def _reset_user_daily(user_id: str, session_id: str, state: dict):
+async def _reset_user_daily(user_id: str, session_id: str, state: dict, timezone_str: str = "America/New_York"):
     """Reset a single user's daily data."""
     try:
-
-        # Archive previous day's goals and metrics
-        from datetime import timedelta
-        yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
-        today = datetime.now().strftime("%Y-%m-%d")
+        # Use user's local time for date calculations
+        user_time = get_user_local_time(timezone_str)
+        yesterday = (user_time - timedelta(days=1)).strftime("%Y-%m-%d")
+        today = user_time.strftime("%Y-%m-%d")
 
         previous_goals = state.get("daily_goals", [])
         completed_count = sum(1 for g in previous_goals if g.get("completed", False))
@@ -3440,49 +3600,48 @@ scheduler = AsyncIOScheduler()
 @app.on_event("startup")
 async def start_scheduler():
     # ═══════════════════════════════════════════════════════════════
-    # AGGRESSIVE 2-HOUR PROACTIVE CHECK-INS
-    # Check-ins at: 7AM, 9AM, 11AM, 1PM, 3PM, 5PM, 7PM, 9PM
+    # TIMEZONE-AWARE PROACTIVE CHECK-INS (runs every hour)
+    # Each user gets check-ins at 7,9,11,13,15,17,19,21 in THEIR timezone
     # ═══════════════════════════════════════════════════════════════
-    for hour in [7, 9, 11, 13, 15, 17, 19, 21]:
-        scheduler.add_job(
-            proactive_checkin,
-            'cron',
-            hour=hour,
-            minute=0,
-            id=f'checkin_{hour:02d}00'
-        )
+    scheduler.add_job(
+        proactive_checkin,
+        'cron',
+        minute=0,  # Run every hour on the hour
+        id='proactive_checkin_hourly'
+    )
 
     # ═══════════════════════════════════════════════════════════════
-    # WATER REMINDERS (offset by 1 hour from check-ins)
-    # Reminders at: 8AM, 10AM, 12PM, 2PM, 4PM, 6PM, 8PM
+    # TIMEZONE-AWARE WATER REMINDERS (runs every hour)
+    # Each user gets reminders at 8,10,12,14,16,18,20 in THEIR timezone
     # ═══════════════════════════════════════════════════════════════
-    for hour in [8, 10, 12, 14, 16, 18, 20]:
-        scheduler.add_job(
-            water_reminder,
-            'cron',
-            hour=hour,
-            minute=0,
-            id=f'water_{hour:02d}00'
-        )
+    scheduler.add_job(
+        water_reminder,
+        'cron',
+        minute=30,  # Run every hour at :30 (offset from check-ins)
+        id='water_reminder_hourly'
+    )
 
     # ═══════════════════════════════════════════════════════════════
-    # SCHEDULE-AWARE REMINDERS (every 15 minutes during waking hours)
-    # Checks daily plan for upcoming meals, workouts, etc.
+    # SCHEDULE-AWARE REMINDERS (every 15 minutes)
+    # Checks each user's timezone for 7AM-10PM window
     # ═══════════════════════════════════════════════════════════════
-    for hour in range(7, 22):  # 7 AM to 10 PM
-        for minute in [0, 15, 30, 45]:
-            scheduler.add_job(
-                schedule_reminder,
-                'cron',
-                hour=hour,
-                minute=minute,
-                id=f'schedule_{hour:02d}{minute:02d}'
-            )
+    scheduler.add_job(
+        schedule_reminder,
+        'cron',
+        minute='*/15',  # Every 15 minutes
+        id='schedule_reminder_15min'
+    )
 
     # ═══════════════════════════════════════════════════════════════
-    # MIDNIGHT RESET - Archive goals and generate new daily plan
+    # TIMEZONE-AWARE MIDNIGHT RESET (runs every hour)
+    # Each user gets reset at midnight in THEIR timezone
     # ═══════════════════════════════════════════════════════════════
-    scheduler.add_job(midnight_reset, 'cron', hour=0, minute=0, id='midnight_reset')
+    scheduler.add_job(
+        midnight_reset,
+        'cron',
+        minute=5,  # Run every hour at :05 to catch midnight for each timezone
+        id='midnight_reset_hourly'
+    )
 
     # ═══════════════════════════════════════════════════════════════
     # MORNING CALENDAR SYNC (7:05 AM)
@@ -3538,13 +3697,13 @@ async def start_scheduler():
 
     scheduler.start()
     logger.info("=" * 60)
-    logger.info("DRILL INSTRUCTOR SCHEDULER ACTIVATED")
+    logger.info("DRILL INSTRUCTOR SCHEDULER ACTIVATED (TIMEZONE-AWARE)")
     logger.info("=" * 60)
-    logger.info("Proactive check-ins: 7AM, 9AM, 11AM, 1PM, 3PM, 5PM, 7PM, 9PM")
-    logger.info("Water reminders: 8AM, 10AM, 12PM, 2PM, 4PM, 6PM, 8PM")
-    logger.info("Schedule reminders: Every 15 minutes (7AM-10PM)")
-    logger.info("Midnight reset: 12:00 AM")
-    logger.info("Morning calendar sync: 7:05 AM")
+    logger.info("Proactive check-ins: Every hour (7,9,11,13,15,17,19,21 in USER'S timezone)")
+    logger.info("Water reminders: Every hour at :30 (8,10,12,14,16,18,20 in USER'S timezone)")
+    logger.info("Schedule reminders: Every 15 minutes (7AM-10PM in USER'S timezone)")
+    logger.info("Midnight reset: Every hour at :05 (midnight in USER'S timezone)")
+    logger.info("Morning calendar sync: 7:05 AM server time")
     logger.info("=" * 60)
 
 if __name__ == "__main__":

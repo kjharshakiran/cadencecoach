@@ -2344,6 +2344,67 @@
                 </div>
             </div>
 
+            <!-- Settings & Preferences -->
+            <div class="integration-category">Settings & Preferences</div>
+            <div class="integrations-grid">
+                <!-- Timezone Settings -->
+                <div class="integration-card" id="timezone-settings-card">
+                    <div class="integration-header">
+                        <div class="integration-icon" style="background: rgba(99, 102, 241, 0.1);">🌍</div>
+                        <div class="integration-title">
+                            <h3>Timezone</h3>
+                            <span>Notification Timing</span>
+                        </div>
+                        <span class="integration-status connected" id="timezone-status">Set</span>
+                    </div>
+                    <p class="integration-description">
+                        Set your timezone so notifications, reminders, and daily resets happen at the right time for you - not server time.
+                    </p>
+                    <div style="margin: 12px 0;">
+                        <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Your Timezone:</label>
+                        <select id="timezone-select" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color); font-size: 0.9rem;" onchange="updateTimezone(this.value)">
+                            <option value="">Loading...</option>
+                        </select>
+                        <p id="timezone-current" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px;">Current: --</p>
+                    </div>
+                    <div class="integration-features">
+                        <span class="integration-feature">Reminders</span>
+                        <span class="integration-feature">Check-ins</span>
+                        <span class="integration-feature">Daily Reset</span>
+                    </div>
+                </div>
+
+                <!-- Wake/Sleep Time -->
+                <div class="integration-card">
+                    <div class="integration-header">
+                        <div class="integration-icon" style="background: rgba(245, 158, 11, 0.1);">⏰</div>
+                        <div class="integration-title">
+                            <h3>Active Hours</h3>
+                            <span>Do Not Disturb</span>
+                        </div>
+                        <span class="integration-status connected">Set</span>
+                    </div>
+                    <p class="integration-description">
+                        Set your wake and sleep times. Coach will only send notifications during your active hours.
+                    </p>
+                    <div style="margin: 12px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Wake Time:</label>
+                            <input type="time" id="wake-time-input" value="07:00" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color);" onchange="updateActiveHours()">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Sleep Time:</label>
+                            <input type="time" id="sleep-time-input" value="22:00" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color);" onchange="updateActiveHours()">
+                        </div>
+                    </div>
+                    <div class="integration-features">
+                        <span class="integration-feature">Quiet Hours</span>
+                        <span class="integration-feature">Morning Brief</span>
+                        <span class="integration-feature">Evening Summary</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Info Footer -->
             <div style="padding: 30px 20px; text-align: center; border-top: 1px solid var(--border-color); margin-top: 20px;">
                 <p style="color: var(--text-muted); font-size: 0.8rem; margin: 0;">
@@ -2699,6 +2760,83 @@
             };
 
             alert(messages[integrationId] || 'Integration setup coming soon!');
+        }
+
+        // --- Timezone & Settings ---
+        async function loadTimezones() {
+            try {
+                const response = await fetch(`${API_URL}/timezones`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const select = document.getElementById('timezone-select');
+                    select.innerHTML = '';
+                    data.timezones.forEach(tz => {
+                        const option = document.createElement('option');
+                        option.value = tz.value;
+                        option.textContent = tz.label;
+                        select.appendChild(option);
+                    });
+                    // Load current settings
+                    loadNotificationSettings();
+                }
+            } catch (error) {
+                console.error('Error loading timezones:', error);
+            }
+        }
+
+        async function loadNotificationSettings() {
+            try {
+                const response = await fetch(`${API_URL}/notifications/settings`);
+                if (response.ok) {
+                    const settings = await response.json();
+                    // Set timezone dropdown
+                    const select = document.getElementById('timezone-select');
+                    if (settings.timezone) {
+                        select.value = settings.timezone;
+                        document.getElementById('timezone-current').textContent = `Current: ${settings.timezone}`;
+                    }
+                    // Set wake/sleep times
+                    if (settings.wake_time) {
+                        document.getElementById('wake-time-input').value = settings.wake_time;
+                    }
+                    if (settings.sleep_time) {
+                        document.getElementById('sleep-time-input').value = settings.sleep_time;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading notification settings:', error);
+            }
+        }
+
+        async function updateTimezone(timezone) {
+            try {
+                const response = await fetch(`${API_URL}/notifications/settings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ timezone: timezone })
+                });
+                if (response.ok) {
+                    document.getElementById('timezone-current').textContent = `Current: ${timezone}`;
+                    console.log('Timezone updated to:', timezone);
+                }
+            } catch (error) {
+                console.error('Error updating timezone:', error);
+            }
+        }
+
+        async function updateActiveHours() {
+            const wakeTime = document.getElementById('wake-time-input').value;
+            const sleepTime = document.getElementById('sleep-time-input').value;
+            try {
+                await fetch(`${API_URL}/notifications/settings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ wake_time: wakeTime, sleep_time: sleepTime })
+                });
+                console.log('Active hours updated:', wakeTime, '-', sleepTime);
+            } catch (error) {
+                console.error('Error updating active hours:', error);
+            }
         }
 
         // --- WHOOP Integration ---
@@ -3898,6 +4036,7 @@
         checkWhoopRedirect(); // Check for Whoop OAuth redirect
         loadWhoopStatus(); // Load Whoop connection status
         loadWhatsAppStatus(); // Load WhatsApp connection status
+        loadTimezones(); // Load timezone options and settings
 
         // Initialize trackers after a short delay to ensure DOM is ready
         setTimeout(initTrackers, 500);
