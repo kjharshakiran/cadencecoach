@@ -150,6 +150,62 @@
             object-fit: cover;
         }
 
+        /* Plan Status Badge */
+        .plan-status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .plan-status-badge.pending {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+            border-color: rgba(245, 158, 11, 0.2);
+        }
+
+        .plan-status-badge.active {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            border-color: rgba(34, 197, 94, 0.2);
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.1);
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .pending .status-dot {
+            animation: pulse-status 2s infinite;
+        }
+
+        @keyframes pulse-status {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.4;
+                transform: scale(1.2);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
         .user-name {
             font-size: 14px;
             font-weight: 500;
@@ -446,7 +502,7 @@
 
         input::placeholder,
         textarea::placeholder {
-            color: #94a3b8;
+            color: var(--text-muted);
         }
 
         button.primary-btn {
@@ -584,7 +640,7 @@
         }
 
         #chat-history::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+            background: var(--text-muted);
         }
 
         .message {
@@ -652,7 +708,7 @@
 
         .message-time {
             font-size: 0.65rem;
-            color: #94a3b8;
+            color: var(--text-muted);
             margin-left: auto;
         }
 
@@ -1137,7 +1193,7 @@
         }
 
         .loading {
-            color: #64748b;
+            color: var(--text-muted);
             font-style: italic;
             font-size: 0.9rem;
         }
@@ -1713,6 +1769,11 @@
             <div class="user-info">
                 <span class="user-avatar" id="user-avatar">⚔️</span>
                 <span class="user-name" id="user-name">Warrior</span>
+                <!-- Plan Status Badge -->
+                <span id="plan-status-badge" class="plan-status-badge pending" title="Plan Status">
+                    <span class="status-dot"></span>
+                    <span class="status-text">PENDING</span>
+                </span>
             </div>
             <!-- Notification Bell -->
             <div class="notification-bell" id="notification-bell" onclick="toggleNotifications()">
@@ -1889,21 +1950,21 @@
                             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
                                 <div>
                                     <label
-                                        style="font-size: 0.65rem; color: #666; display: block; margin-bottom: 4px;">Weight
+                                        style="font-size: 0.65rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Weight
                                         (lbs)</label>
                                     <input type="number" id="metric-weight" step="0.1" placeholder="165"
                                         style="width: 100%; padding: 8px; font-size: 0.85rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 4px; color: white; box-sizing: border-box;">
                                 </div>
                                 <div>
                                     <label
-                                        style="font-size: 0.65rem; color: #666; display: block; margin-bottom: 4px;">Sleep
+                                        style="font-size: 0.65rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Sleep
                                         (hrs)</label>
                                     <input type="number" id="metric-sleep" step="0.5" placeholder="7.5"
                                         style="width: 100%; padding: 8px; font-size: 0.85rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 4px; color: white; box-sizing: border-box;">
                                 </div>
                                 <div>
                                     <label
-                                        style="font-size: 0.65rem; color: #666; display: block; margin-bottom: 4px;">Recovery
+                                        style="font-size: 0.65rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Recovery
                                         %</label>
                                     <input type="number" id="metric-recovery" min="0" max="100" placeholder="85"
                                         style="width: 100%; padding: 8px; font-size: 0.85rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 4px; color: white; box-sizing: border-box;">
@@ -1917,11 +1978,12 @@
                         <!-- Progress Bar -->
                         <div id="goals-progress" style="margin-bottom: 12px;">
                             <div
-                                style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #64748b; margin-bottom: 5px;">
+                                style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">
                                 <span id="goals-count">0/0 completed</span>
                                 <span id="goals-percent">0%</span>
                             </div>
-                            <div style="background: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden;">
+                            <div
+                                style="background: rgba(255, 255, 255, 0.1); height: 6px; border-radius: 3px; overflow: hidden;">
                                 <div id="goals-bar"
                                     style="background: var(--accent-color); height: 100%; width: 0%; transition: width 0.3s;">
                                 </div>
@@ -1936,15 +1998,19 @@
 
                     <!-- Daily Plan View -->
                     <div id="daily-view" style="flex: 1; display: none; flex-direction: column; overflow-y: auto;">
-                        <div id="daily-plan-content" style="font-size: 0.85rem; line-height: 1.6; color: #475569;">
-                            <p style="color: #64748b; text-align: center; margin-top: 20px;">Loading daily plan...</p>
+                        <div id="daily-plan-content"
+                            style="font-size: 0.85rem; line-height: 1.6; color: var(--text-color);">
+                            <p style="color: var(--text-muted); text-align: center; margin-top: 20px;">Loading daily
+                                plan...</p>
                         </div>
                     </div>
 
                     <!-- Master Plan View -->
                     <div id="master-view" style="flex: 1; display: none; flex-direction: column; overflow-y: auto;">
-                        <div id="master-plan-content" style="font-size: 0.85rem; line-height: 1.6; color: #475569;">
-                            <p style="color: #64748b; text-align: center; margin-top: 20px;">Loading master plan...</p>
+                        <div id="master-plan-content"
+                            style="font-size: 0.85rem; line-height: 1.6; color: var(--text-color);">
+                            <p style="color: var(--text-muted); text-align: center; margin-top: 20px;">Loading master
+                                plan...</p>
                         </div>
                     </div>
                 </div>
@@ -1997,7 +2063,7 @@
                     <h3>Journey Progress</h3>
                     <div style="display: flex; gap: 10px;">
                         <button onclick="simulateJourney()"
-                            style="padding: 8px 12px; background: transparent; border: 1px solid var(--border-color); color: #64748b; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; cursor: pointer; text-transform: uppercase;">Simulate
+                            style="padding: 8px 12px; background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; cursor: pointer; text-transform: uppercase;">Simulate
                             Data</button>
                         <button onclick="completeGoal()" id="complete-goal-btn"
                             style="padding: 8px 12px; background: linear-gradient(135deg, #22c55e, #16a34a); border: none; color: white; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; cursor: pointer; text-transform: uppercase;">Complete
@@ -2006,17 +2072,18 @@
                 </div>
                 <div id="journey-progress" style="margin-top: 15px;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-size: 0.85rem; color: #64748b;">Progress to Goal</span>
+                        <span style="font-size: 0.85rem; color: var(--text-muted);">Progress to Goal</span>
                         <span id="progress-percent"
                             style="font-size: 0.85rem; color: var(--accent-color); font-weight: bold;">0%</span>
                     </div>
-                    <div style="background: #e2e8f0; height: 12px; border-radius: 6px; overflow: hidden;">
+                    <div
+                        style="background: rgba(255, 255, 255, 0.1); height: 12px; border-radius: 6px; overflow: hidden;">
                         <div id="progress-bar"
                             style="background: linear-gradient(90deg, var(--accent-color), #22c55e); height: 100%; width: 0%; transition: width 0.5s;">
                         </div>
                     </div>
                     <div
-                        style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.75rem; color: #666;">
+                        style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.75rem; color: var(--text-muted);">
                         <span id="progress-start">Start: 176lbs</span>
                         <span id="progress-current">Current: 176lbs</span>
                         <span id="progress-target">Target: 165lbs</span>
@@ -2030,14 +2097,14 @@
                 <div id="streak-calendar" style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px;">
                     <!-- Calendar days will be populated here -->
                 </div>
-                <div style="display: flex; gap: 15px; margin-top: 15px; font-size: 0.75rem; color: #64748b;">
+                <div style="display: flex; gap: 15px; margin-top: 15px; font-size: 0.75rem; color: var(--text-muted);">
                     <span><span
                             style="display: inline-block; width: 12px; height: 12px; background: #22c55e; border-radius: 2px; margin-right: 5px;"></span>All
                         goals done</span>
                     <span><span
                             style="display: inline-block; width: 12px; height: 12px; background: #f59e0b; border-radius: 2px; margin-right: 5px;"></span>Partial</span>
                     <span><span
-                            style="display: inline-block; width: 12px; height: 12px; background: #e2e8f0; border-radius: 2px; margin-right: 5px;"></span>No
+                            style="display: inline-block; width: 12px; height: 12px; background: rgba(255, 255, 255, 0.1); border-radius: 2px; margin-right: 5px;"></span>No
                         data</span>
                 </div>
             </div>
@@ -2074,36 +2141,46 @@
             <h2
                 style="color: var(--accent-color); font-family: 'JetBrains Mono', monospace; font-size: 1.8rem; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 3px;">
                 Goal Accomplished!</h2>
-            <p id="celebration-name" style="color: #64748b; font-size: 1.1rem; margin-bottom: 30px;">You are a TRUE
+            <p id="celebration-name" style="color: var(--text-muted); font-size: 1.1rem; margin-bottom: 30px;">You are a
+                TRUE
                 SPARTAN!</p>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px;">
-                <div style="background: #f9fafb; padding: 15px; border-radius: 10px; border: 1px solid #e5e7eb;">
+                <div
+                    style="background: var(--card-bg-light); padding: 15px; border-radius: 10px; border: 1px solid var(--border-color);">
                     <div style="font-size: 2rem; color: var(--accent-color); font-weight: bold;" id="stat-weight-lost">
                         -11lbs</div>
-                    <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Weight Lost</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Weight Lost
+                    </div>
                 </div>
-                <div style="background: #f9fafb; padding: 15px; border-radius: 10px; border: 1px solid #e5e7eb;">
+                <div
+                    style="background: var(--card-bg-light); padding: 15px; border-radius: 10px; border: 1px solid var(--border-color);">
                     <div style="font-size: 2rem; color: #22c55e; font-weight: bold;" id="stat-days">78</div>
-                    <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Days Completed</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Days Completed
+                    </div>
                 </div>
-                <div style="background: #f9fafb; padding: 15px; border-radius: 10px; border: 1px solid #e5e7eb;">
+                <div
+                    style="background: var(--card-bg-light); padding: 15px; border-radius: 10px; border: 1px solid var(--border-color);">
                     <div style="font-size: 2rem; color: #3b82f6; font-weight: bold;" id="stat-sleep">7.5h</div>
-                    <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Avg Sleep</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Avg Sleep
+                    </div>
                 </div>
-                <div style="background: #f9fafb; padding: 15px; border-radius: 10px; border: 1px solid #e5e7eb;">
+                <div
+                    style="background: var(--card-bg-light); padding: 15px; border-radius: 10px; border: 1px solid var(--border-color);">
                     <div style="font-size: 2rem; color: #f59e0b; font-weight: bold;" id="stat-perfect">12</div>
-                    <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Perfect Days</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Perfect Days
+                    </div>
                 </div>
             </div>
 
             <div
                 style="background: rgba(220, 38, 38, 0.05); border: 1px solid rgba(220, 38, 38, 0.2); padding: 15px; border-radius: 10px; margin-bottom: 25px;">
-                <div style="font-size: 0.9rem; color: #475569;" id="stat-journey">
+                <div style="font-size: 0.9rem; color: var(--text-color);" id="stat-journey">
                     <span id="stat-start">176lbs</span> → <span id="stat-final"
                         style="color: var(--accent-color); font-weight: bold;">165lbs</span>
                 </div>
-                <div style="font-size: 0.75rem; color: #64748b; margin-top: 5px;">Your Transformation Journey</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">Your Transformation Journey
+                </div>
             </div>
 
             <button onclick="closeCelebration()"
@@ -2635,10 +2712,10 @@
                 responsive: true,
                 maintainAspectRatio: true,
                 scales: {
-                    y: { grid: { color: '#e2e8f0' }, ticks: { color: '#64748b' } },
-                    x: { grid: { color: '#e2e8f0' }, ticks: { color: '#64748b' } }
+                    y: { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'var(--text-muted)' } },
+                    x: { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'var(--text-muted)' } }
                 },
-                plugins: { legend: { labels: { color: '#64748b' } } }
+                plugins: { legend: { labels: { color: 'var(--text-muted)' } } }
             };
 
             // Weight Chart
@@ -2775,7 +2852,7 @@
                     align-items: center;
                     justify-content: center;
                     font-size: 0.65rem;
-                    color: #666;
+                    color: var(--text-muted);
                     cursor: pointer;
                     transition: transform 0.2s;
                 `;
@@ -3325,6 +3402,9 @@
                     if (data.plan_accepted) {
                         loadTodayMetrics();
                     }
+
+                    // Update plan status badge
+                    updatePlanStatusBadge(data.plan_accepted);
                 } else {
                     // Profile not locked, show form and hide nav
                     document.getElementById('onboarding-form').classList.add('active');
@@ -3510,11 +3590,11 @@
                             </div>
                         `).join('');
                     } else {
-                        container.innerHTML = '<p style="color: #64748b; text-align: center;">No goals yet. Accept your Master Plan first!</p>';
+                        container.innerHTML = '<p style="color: var(--text-muted); text-align: center;">No goals yet. Accept your Master Plan first!</p>';
                     }
                 }
             } catch (error) {
-                container.innerHTML = '<p style="color: #64748b; text-align: center;">Error loading goals</p>';
+                container.innerHTML = '<p style="color: var(--text-muted); text-align: center;">Error loading goals</p>';
             }
         }
 
@@ -3590,12 +3670,12 @@
 
         async function loadDailyPlan() {
             const content = document.getElementById('daily-plan-content');
-            content.innerHTML = '<p style="color: #64748b; text-align: center;">Loading daily plan...</p>';
+            content.innerHTML = '<p style="color: var(--text-muted); text-align: center;">Loading daily plan...</p>';
 
             try {
                 const response = await fetch(`${API_URL}/daily-plan`);
                 if (!response.ok) {
-                    content.innerHTML = '<p style="color: #64748b; text-align: center;">No daily plan yet.<br><br>Ask the coach: <em>"What\'s my plan for today?"</em></p>';
+                    content.innerHTML = '<p style="color: var(--text-muted); text-align: center;">No daily plan yet.<br><br>Ask the coach: <em>"What\'s my plan for today?"</em></p>';
                     return;
                 }
                 const data = await response.json();
@@ -3606,22 +3686,22 @@
                         ${formatPlanText(data.plan_text)}
                     `;
                 } else {
-                    content.innerHTML = '<p style="color: #64748b; text-align: center;">No daily plan yet.<br><br>Ask the coach: <em>"What\'s my plan for today?"</em></p>';
+                    content.innerHTML = '<p style="color: var(--text-muted); text-align: center;">No daily plan yet.<br><br>Ask the coach: <em>"What\'s my plan for today?"</em></p>';
                 }
             } catch (error) {
                 console.error("Error loading daily plan:", error);
-                content.innerHTML = '<p style="color: #64748b; text-align: center;">Ask the coach for your daily plan!</p>';
+                content.innerHTML = '<p style="color: var(--text-muted); text-align: center;">Ask the coach for your daily plan!</p>';
             }
         }
 
         async function loadMasterPlan() {
             const content = document.getElementById('master-plan-content');
-            content.innerHTML = '<p style="color: #64748b; text-align: center;">Loading master plan...</p>';
+            content.innerHTML = '<p style="color: var(--text-muted); text-align: center;">Loading master plan...</p>';
 
             try {
                 const response = await fetch(`${API_URL}/master-plan`);
                 if (!response.ok) {
-                    content.innerHTML = '<p style="color: #64748b; text-align: center;">No master plan available.</p>';
+                    content.innerHTML = '<p style="color: var(--text-muted); text-align: center;">No master plan available.</p>';
                     return;
                 }
                 const data = await response.json();
@@ -3632,11 +3712,11 @@
                         ${formatPlanText(data.plan_text)}
                     `;
                 } else {
-                    content.innerHTML = '<p style="color: #64748b; text-align: center;">No master plan available.</p>';
+                    content.innerHTML = '<p style="color: var(--text-muted); text-align: center;">No master plan available.</p>';
                 }
             } catch (error) {
                 console.error("Error loading master plan:", error);
-                content.innerHTML = '<p style="color: #64748b; text-align: center;">Error loading master plan.</p>';
+                content.innerHTML = '<p style="color: var(--text-muted); text-align: center;">Error loading master plan.</p>';
             }
         }
 
@@ -3772,6 +3852,7 @@
                     loadDailyGoals();
                     loadTodayMetrics();
                     loadDailyPlan();
+                    updatePlanStatusBadge(true);
                 }
             } catch (error) {
                 document.getElementById(loadingId).remove();
@@ -3871,6 +3952,21 @@
                 btn.textContent = "⚠ FACTORY RESET";
             }
         }
+        function updatePlanStatusBadge(isAccepted) {
+            const badge = document.getElementById('plan-status-badge');
+            const text = badge.querySelector('.status-text');
+
+            if (isAccepted) {
+                badge.className = 'plan-status-badge active';
+                text.textContent = 'ACTIVE';
+                badge.title = 'Plan is active and tracking';
+            } else {
+                badge.className = 'plan-status-badge pending';
+                text.textContent = 'PENDING';
+                badge.title = 'Waiting for plan acceptance';
+            }
+        }
+
 
         // --- Daily Goals Functions ---
         async function loadDailyGoals() {
@@ -3900,12 +3996,12 @@
                     checkbox.style.cssText = `
                         width: 20px;
                         height: 20px;
-                        border: 2px solid ${goal.completed ? '#22c55e' : '#666'};
+                        border: 2px solid ${goal.completed ? 'var(--success-color)' : 'var(--text-muted)'};
                         border-radius: 4px;
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        background: ${goal.completed ? '#22c55e' : 'transparent'};
+                        background: ${goal.completed ? 'var(--success-color)' : 'transparent'};
                         color: white;
                         font-size: 12px;
                         flex-shrink: 0;
@@ -3915,7 +4011,7 @@
                     const label = document.createElement('span');
                     label.style.cssText = `
                         font-size: 0.85rem;
-                        color: ${goal.completed ? '#94a3b8' : '#1e293b'};
+                        color: ${goal.completed ? 'var(--text-muted)' : 'var(--text-color)'};
                         text-decoration: ${goal.completed ? 'line-through' : 'none'};
                     `;
                     label.textContent = goal.name;

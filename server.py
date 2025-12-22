@@ -1512,13 +1512,35 @@ from sqlalchemy import text
 
 # ...
 
+def make_json_serializable(obj):
+    """Recursively convert objects to JSON-serializable types."""
+    if obj is None or isinstance(obj, (str, int, float, bool)):
+        return obj
+    elif isinstance(obj, dict):
+        return {k: make_json_serializable(v) for k, v in obj.items()
+                if not k.startswith('_')}  # Skip private/internal keys
+    elif isinstance(obj, (list, tuple)):
+        return [make_json_serializable(item) for item in obj]
+    elif hasattr(obj, 'isoformat'):  # datetime
+        return obj.isoformat()
+    elif hasattr(obj, '__dict__'):
+        # Try to convert object to dict, skipping internal attributes
+        return make_json_serializable({k: v for k, v in obj.__dict__.items()
+                                        if not k.startswith('_')})
+    else:
+        # Fallback: convert to string
+        return str(obj)
+
+
 def force_update_state(session_id: str, new_state: Dict[str, Any]):
     """Directly updates the session state in the database."""
+    # Ensure the state is JSON serializable
+    clean_state = make_json_serializable(new_state)
     engine = sqlalchemy.create_engine(db_url)
     with engine.connect() as conn:
         conn.execute(
             text("UPDATE sessions SET state = :state, update_time = CURRENT_TIMESTAMP WHERE id = :id"),
-            {"state": json.dumps(new_state), "id": session_id}
+            {"state": json.dumps(clean_state), "id": session_id}
         )
         conn.commit()
 
@@ -1530,7 +1552,7 @@ async def onboard(request: Request, onboard_data: OnboardRequest):
 
     # Directly update session state with profile and lock it
     session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
-    current_state = session.state
+    current_state = dict(session.state)  # Make a copy to avoid ADK internal objects
     current_state["warrior_profile"] = {
         "name": onboard_data.name,
         "age": onboard_data.age,
@@ -1554,33 +1576,102 @@ async def onboard(request: Request, onboard_data: OnboardRequest):
         logger.error(f"Error calculating days remaining: {e}")
 
     # Now ask the agent to create the Master Plan
+    # Infer gender from name (simple heuristic)
+    female_names = ['sarah', 'emma', 'olivia', 'ava', 'sophia', 'isabella', 'mia', 'charlotte', 'amelia', 'harper', 'evelyn', 'abigail', 'emily', 'elizabeth', 'sofia', 'ella', 'madison', 'scarlett', 'victoria', 'aria', 'grace', 'chloe', 'camila', 'penelope', 'riley', 'layla', 'lillian', 'nora', 'zoey', 'mila', 'aubrey', 'hannah', 'lily', 'addison', 'eleanor', 'natalie', 'luna', 'savannah', 'brooklyn', 'leah', 'zoe', 'stella', 'hazel', 'ellie', 'paisley', 'audrey', 'skylar', 'violet', 'claire', 'bella', 'aurora', 'lucy', 'anna', 'samantha', 'caroline', 'genesis', 'aaliyah', 'kennedy', 'kinsley', 'allison', 'maya', 'sarah', 'madelyn', 'adeline', 'alexa', 'ariana', 'elena', 'gabriella', 'naomi', 'alice', 'sadie', 'hailey', 'eva', 'emilia', 'autumn', 'quinn', 'nevaeh', 'piper', 'ruby', 'serenity', 'willow', 'everly', 'cora', 'kaylee', 'lydia', 'aubree', 'arianna', 'eliana', 'peyton', 'melanie', 'gianna', 'isabelle', 'julia', 'valentina', 'nova', 'clara', 'vivian', 'reagan', 'mackenzie']
+    gender = "female" if onboard_data.name.lower() in female_names else "male"
+
     profile_text = (
-        f"I have completed my profile setup. Here are my details:\n"
-        f"Name: {onboard_data.name}, Age: {onboard_data.age}, Height: {onboard_data.height}cm, "
-        f"Weight: {onboard_data.weight}lbs\n"
-        f"Goal: {onboard_data.goal}\n"
-        f"Target Date: {onboard_data.target_date}{days_info}\n"
-        f"Reason: {onboard_data.reason}\n\n"
-        f"Please create my Master Plan YOURSELF. Do NOT call any sub-agents (fitness or nutrition) at this stage.\n"
-        f"Generate the complete high-level strategy based on my profile. I will ask for detailed daily plans later."
+        f"NEW USER ONBOARDING - Generate Master Plan\n\n"
+        f"Profile:\n"
+        f"- Name: {onboard_data.name}\n"
+        f"- Age: {onboard_data.age}\n"
+        f"- Height: {onboard_data.height}cm\n"
+        f"- Weight: {onboard_data.weight}lbs\n"
+        f"- Gender: {gender}\n"
+        f"- Goal: {onboard_data.goal}\n"
+        f"- Target Date: {onboard_data.target_date}{days_info}\n"
+        f"- Reason: {onboard_data.reason}\n\n"
+        f"INSTRUCTIONS:\n"
+        f"1. FIRST call the calculate_bmr_tdee tool with: weight_lbs={onboard_data.weight}, height_cm={onboard_data.height}, age={onboard_data.age}, gender=\"{gender}\", activity_level=\"moderate\"\n"
+        f"2. THEN generate the MASTER PLAN using the exact format from your instructions\n"
+        f"3. Include all sections: WHY, FEASIBILITY, CALCULATIONS, PHASES, WORKOUT, NUTRITION, NON-NEGOTIABLES"
     )
     
     content = types.Content(role="user", parts=[types.Part(text=profile_text)])
     final_response_text = ""
-    
-    async for event in runner.run_async(
-        user_id=user_id, 
-        session_id=session_id, 
-        new_message=content
-    ):
-        if event.is_final_response():
-             if event.content and event.content.parts:
-                final_response_text = event.content.parts[0].text.strip()
+    all_text_parts = []
+
+    logger.info(f"Sending onboard request to agent for user {onboard_data.name}")
+
+    # Retry logic for Master Plan generation
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            all_text_parts = []
+            final_response_text = ""
+            
+            async for event in runner.run_async(
+                user_id=user_id,
+                session_id=session_id,
+                new_message=content
+            ):
+                # Collect all text responses
+                if event.content and event.content.parts:
+                    for part in event.content.parts:
+                        if hasattr(part, 'text') and part.text:
+                            all_text_parts.append(part.text)
+                            logger.info(f"Got text part from agent (length: {len(part.text)})")
+
+                if event.is_final_response():
+                    if event.content and event.content.parts:
+                        for part in event.content.parts:
+                            if hasattr(part, 'text') and part.text:
+                                final_response_text = part.text.strip()
+                                break
+
+            # If no final response but we have collected text, use the longest one that looks like a plan
+            if not final_response_text and all_text_parts:
+                # Find the longest text that contains "MASTER PLAN"
+                plan_texts = [t for t in all_text_parts if "MASTER PLAN" in t.upper()]
+                if plan_texts:
+                    final_response_text = max(plan_texts, key=len).strip()
+                else:
+                    final_response_text = max(all_text_parts, key=len).strip()
+                logger.info("Using collected text as final response")
+
+            # Validate the response contains required sections
+            response_upper = final_response_text.upper()
+            has_required_sections = (
+                "MASTER PLAN" in response_upper and 
+                "YOUR WHY" in response_upper and
+                "CALCULATIONS" in response_upper
+            )
+            
+            if final_response_text and has_required_sections:
+                logger.info(f"Master Plan generated successfully on attempt {attempt + 1}")
+                break
+            elif attempt < max_retries - 1:
+                logger.warning(f"Attempt {attempt + 1} failed - response missing required sections, retrying...")
+                import asyncio
+                await asyncio.sleep(2)  # Wait before retry
+            
+        except Exception as e:
+            logger.error(f"Error on attempt {attempt + 1}: {e}")
+            if attempt < max_retries - 1:
+                import asyncio
+                await asyncio.sleep(2)
+            else:
+                raise
+
+    if not final_response_text or len(final_response_text) < 100:
+        logger.error("No valid response received from agent after retries!")
+        final_response_text = "Error generating Master Plan. Please try again."
+
+    logger.info(f"Final response length: {len(final_response_text)}")
 
     # Save the master plan to session state
-    # Extract the plan from the response and store it
-    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
-    current_state = session.state
+    # Use our existing current_state copy (not ADK session) to avoid serialization issues
+    # The ADK session may contain internal objects that are not JSON serializable
     current_state["master_plan"] = {
         "plan_text": final_response_text,
         "created_at": onboard_data.target_date,
@@ -1678,7 +1769,7 @@ async def accept_plan(request: Request):
     user_id = get_user_id(request)
     session_id = get_or_create_session_id(user_id)
     session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
-    state = session.state
+    state = dict(session.state)  # Make a copy to avoid ADK internal objects
 
     if not state.get("master_plan"):
         raise HTTPException(status_code=400, detail="No master plan to accept")
@@ -1702,19 +1793,28 @@ async def accept_plan(request: Request):
 
     # Generate actual daily plan by asking the agent
     try:
+        # Get user's reason from profile
+        warrior_profile = state.get("warrior_profile", {})
+        user_reason = warrior_profile.get("reason", "achieve my fitness goals")
+        user_name = warrior_profile.get("name", "Warrior")
+
         daily_plan_prompt = (
-            f"COMMAND: Generate a NEW COMPLETE DAILY BATTLE PLAN for today ({today}). "
-            f"The Master Plan has just been accepted. DO NOT retrieve a stored plan. GENERATE a new one.\n\n"
-            f"INCLUDE ALL OF THE FOLLOWING IN ONE RESPONSE:\n"
-            f"1. 🌅 MORNING ROUTINE (wake up time, ice wash, weight check-in)\n"
-            f"2. 💪 TODAY'S WORKOUT with specific exercises, sets, reps, and timing\n"
-            f"3. 🍽️ ALL MEALS with specific foods, portions, and exact times\n"
-            f"4. 💧 WATER/HYDRATION checkpoints throughout the day\n"
-            f"5. 👟 STEP TARGETS and movement breaks\n"
-            f"6. ✅ DAILY GOALS CHECKLIST (vitamins, medicine, ABC drink, etc.)\n"
-            f"7. 🌙 EVENING ROUTINE\n\n"
-            f"Format as a TIME-BASED SCHEDULE from wake-up to bedtime.\n"
-            f"DO NOT delegate - provide the complete plan yourself."
+            f"COMMAND: Generate DAILY BATTLE PLAN for {user_name} - {today}\n\n"
+            f"USER'S WHY: \"{user_reason}\"\n\n"
+            f"Generate a COMPLETE time-based schedule. DO NOT ask questions. Output the plan NOW:\n\n"
+            f"🗓️ DAILY BATTLE PLAN - {today}\n\n"
+            f"🔥 YOUR WHY: \"{user_reason}\"\n\n"
+            f"Include:\n"
+            f"- ⏰ 6:00 AM WAKE UP (ice wash, weight check, 2 glasses water)\n"
+            f"- ⏰ 7:00 AM WORKOUT with specific exercises, sets, reps\n"
+            f"- ⏰ 12:00 PM MEAL 1 with specific foods and portions\n"
+            f"- ⏰ 3:00 PM SNACK\n"
+            f"- ⏰ 6:00 PM MEAL 2 with specific foods and portions\n"
+            f"- ⏰ 8:00 PM EVENING ROUTINE (ABC drink, nuts, walk)\n"
+            f"- ⏰ 10:00 PM BEDTIME\n"
+            f"- 📊 DAILY TOTALS (calories, protein, water, steps)\n"
+            f"- ✅ CHECKLIST\n\n"
+            f"BE SPECIFIC with exercises and foods. DO NOT ask for more information."
         )
 
         content = types.Content(role="user", parts=[types.Part(text=daily_plan_prompt)])
@@ -1730,8 +1830,7 @@ async def accept_plan(request: Request):
                     daily_plan_text = event.content.parts[0].text.strip()
 
         # Save the daily plan
-        session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
-        state = session.state
+        # Use our existing state copy (not ADK session) to avoid serialization issues
         state["daily_plan"]["plan_text"] = daily_plan_text
         force_update_state(session_id, state)
 
@@ -2929,7 +3028,7 @@ async def _proactive_checkin_for_user(user_id: str):
     """Proactive check-in for a single user."""
     session_id = get_or_create_session_id(user_id)
     session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
-    state = session.state
+    state = dict(session.state)  # Make a copy to avoid ADK internal objects
 
     if not state.get("plan_accepted"):
         logger.debug(f"User {user_id}: Plan not accepted, skipping check-in.")
@@ -2940,6 +3039,9 @@ async def _proactive_checkin_for_user(user_id: str):
     timezone_str = notification_settings.get("timezone", "America/New_York")
     now = get_user_local_time(timezone_str)
     current_hour = now.hour
+
+    # Enhanced logging for debugging
+    logger.info(f"User {user_id}: Timezone={timezone_str}, LocalTime={now.strftime('%H:%M')}, Hour={current_hour}")
 
     # Check if current hour is a check-in hour in user's timezone
     checkin_hours = [7, 9, 11, 13, 15, 17, 19, 21]
@@ -2986,6 +3088,10 @@ async def _proactive_checkin_for_user(user_id: str):
     if water_last_logged:
         try:
             last_time = datetime.fromisoformat(water_last_logged)
+            # Make timezone-aware comparison
+            if last_time.tzinfo is None:
+                # Assume server timezone if not specified
+                last_time = last_time.replace(tzinfo=now.tzinfo)
             hours_since_water = round((now - last_time).total_seconds() / 3600, 1)
         except:
             pass
@@ -3122,8 +3228,7 @@ YOUR ORDERS: Based on the status above, issue COMMANDING orders to {user_name}.
                 final_response_text = event.content.parts[0].text.strip()
 
         # Store as pending reminder
-        session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
-        state = session.state
+        # Use our existing state copy (not ADK session) to avoid serialization issues
         reminders = state.get("pending_reminders", [])
         reminders.append({
             "id": f"checkin_{now.strftime('%H%M')}",
@@ -3187,6 +3292,9 @@ async def _water_reminder_for_user(user_id: str):
     now = get_user_local_time(timezone_str)
     current_hour = now.hour
 
+    # Enhanced logging for debugging water reminders
+    logger.debug(f"User {user_id}: Water check - Timezone={timezone_str}, LocalHour={current_hour}")
+
     # Check if current hour is a water reminder hour in user's timezone
     water_hours = [8, 10, 12, 14, 16, 18, 20]
     if current_hour not in water_hours:
@@ -3212,9 +3320,15 @@ async def _water_reminder_for_user(user_id: str):
     needs_reminder = False
     if glasses < water_target:
         if last_logged:
-            last_time = datetime.fromisoformat(last_logged)
-            hours_since = (datetime.now() - last_time).total_seconds() / 3600
-            needs_reminder = hours_since >= 2
+            try:
+                last_time = datetime.fromisoformat(last_logged)
+                # Make timezone-aware comparison using user's local time
+                if last_time.tzinfo is None:
+                    last_time = last_time.replace(tzinfo=now.tzinfo)
+                hours_since = (now - last_time).total_seconds() / 3600
+                needs_reminder = hours_since >= 2
+            except:
+                needs_reminder = True
         else:
             needs_reminder = True
 
@@ -3241,13 +3355,21 @@ async def _water_reminder_for_user(user_id: str):
         notification_settings = state.get("notification_settings", {})
         if notification_settings.get("enable_whatsapp") and notification_settings.get("whatsapp_number"):
             try:
-                hours_since = (datetime.now() - datetime.fromisoformat(last_logged)).total_seconds() / 3600 if last_logged else 0
+                hours_since_value = 0
+                if last_logged:
+                    try:
+                        last_time = datetime.fromisoformat(last_logged)
+                        if last_time.tzinfo is None:
+                            last_time = last_time.replace(tzinfo=now.tzinfo)
+                        hours_since_value = (now - last_time).total_seconds() / 3600
+                    except:
+                        pass
                 await whatsapp_service.send_template_message(
                     notification_settings["whatsapp_number"],
                     "water_reminder",
                     glasses=glasses,
                     target=water_target,
-                    hours_since=round(hours_since, 1) if hours_since else "N/A",
+                    hours_since=round(hours_since_value, 1) if hours_since_value else "N/A",
                     reason=user_reason[:50] if user_reason else "your transformation"
                 )
                 logger.info("WhatsApp water reminder sent")
@@ -3422,7 +3544,7 @@ async def midnight_reset():
         try:
             session_id = get_or_create_session_id(user_id)
             session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
-            state = session.state
+            state = dict(session.state)  # Make a copy to avoid ADK internal objects
 
             if not state.get("plan_accepted"):
                 continue
@@ -3608,8 +3730,7 @@ async def _reset_user_daily(user_id: str, session_id: str, state: dict, timezone
                         daily_plan_text = event.content.parts[0].text.strip()
 
             # Save the new daily plan and parse schedule
-            session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
-            state = session.state
+            # Use our existing state copy (not ADK session) to avoid serialization issues
             state["daily_plan"]["plan_text"] = daily_plan_text
 
             # Parse and store the schedule for smart reminders
