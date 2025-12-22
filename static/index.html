@@ -1696,8 +1696,7 @@
         }
 
         .integrations-header {
-            padding: 20px;
-            border-bottom: 1px solid var(--border-color);
+            padding: 20px 20px 10px 20px;
         }
 
         .integrations-header h2 {
@@ -1813,8 +1812,8 @@
     </div>
 
     <div class="container">
-        <!-- Onboarding Form -->
-        <div id="onboarding-form" class="section">
+        <!-- Onboarding Form (hidden by default, shown if not onboarded) -->
+        <div id="onboarding-form" class="section" style="display: none;">
             <div class="form-grid">
                 <div class="input-group">
                     <label for="name">Name</label>
