@@ -29,7 +29,7 @@ steps:
       - '--image'
       - 'gcr.io/$PROJECT_ID/spartan-coach:$BUILD_ID'
       - '--region'
-      - 'us-central1'
+      - '$_REGION'
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
@@ -42,9 +42,11 @@ steps:
       - '--max-instances'
       - '10'
       - '--add-cloudsql-instances'
-      - '$PROJECT_ID:us-central1:spartan-coach-db'
+      - '$PROJECT_ID:$_REGION:spartan-coach-db'
       - '--set-env-vars'
-      - 'ENVIRONMENT=production,CLOUD_SQL_CONNECTION_NAME=$PROJECT_ID:us-central1:spartan-coach-db,DB_USER=spartanapp,DB_PASS=SpartanWarrior2025!,DB_NAME=spartancoach'
+      - 'ENVIRONMENT=production,MODEL_PROVIDER=gemini,CLOUD_SQL_CONNECTION_NAME=$PROJECT_ID:$_REGION:spartan-coach-db,DB_USER=spartanapp,DB_PASS=SpartanWarrior2025!,DB_NAME=spartancoach'
+      - '--set-secrets'
+      - 'GOOGLE_API_KEY=GOOGLE_API_KEY:latest,ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest,GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest,SESSION_SECRET=SESSION_SECRET:latest,DEFAULT_USERNAME=DEFAULT_USERNAME:latest,DEFAULT_PASSWORD=DEFAULT_PASSWORD:latest,WHOOP_CLIENT_ID=WHOOP_CLIENT_ID:latest,WHOOP_CLIENT_SECRET=WHOOP_CLIENT_SECRET:latest,WHOOP_REDIRECT_URI=WHOOP_REDIRECT_URI:latest,TWILIO_ACCOUNT_SID=TWILIO_ACCOUNT_SID:latest,TWILIO_AUTH_TOKEN=TWILIO_AUTH_TOKEN:latest,TWILIO_WHATSAPP_NUMBER=TWILIO_WHATSAPP_NUMBER:latest'
 
 # Store images in Container Registry
 images:
@@ -57,3 +59,6 @@ timeout: '1200s'
 # Build options
 options:
   logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _REGION: us-central1

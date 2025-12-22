@@ -19,6 +19,8 @@ from starlette.middleware.sessions import SessionMiddleware
 from authlib.integrations.starlette_client import OAuth
 import httpx
 import hashlib
+import sqlalchemy
+from sqlalchemy import text
 
 # Import the new architecture
 from spartan_phalanx.main import THE_SPARTAN
@@ -1124,25 +1126,36 @@ async def whatsapp_webhook(
     phone_number = From.replace("whatsapp:", "").strip()
 
     # Find the session with this phone number
-    # For now, we use the default session (single user mode)
-    user_id = get_user_id(request)
-    session_id = get_or_create_session_id(user_id)
-    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
-    state = session.state
+    # We need to find which user has this phone number in their notification settings
+    user_id = None
+    try:
+        engine = sqlalchemy.create_engine(db_url)
+        with engine.connect() as conn:
+            # Search all sessions for this phone number in the state JSON
+            # This is a bit slow but works for single-user/low-user count
+            # In a real app, we'd have a dedicated phone_numbers table
+            result = conn.execute(text("SELECT user_id, state FROM sessions WHERE app_name = :app"), {"app": APP_NAME})
+            for row in result.fetchall():
+                uid, state_json = row
+                state = json.loads(state_json)
+                notif_settings = state.get("notification_settings", {})
+                if notif_settings.get("whatsapp_number") == f"+{phone_number}" or notif_settings.get("whatsapp_number") == phone_number:
+                    user_id = uid
+                    break
+    except Exception as e:
+        logger.error(f"Error finding user by phone number: {e}")
 
-    # Verify this phone number is connected
-    notification_settings = state.get("notification_settings", {})
-    connected_number = notification_settings.get("whatsapp_number", "")
-
-    # Normalize for comparison
-    if not connected_number:
-        logger.warning(f"WhatsApp message from unconnected number: {phone_number}")
-        # Still respond but inform them to connect
+    if not user_id:
+        logger.warning(f"WhatsApp message from unknown number: {phone_number}")
         await whatsapp_service.send_message(
             phone_number,
             "You're not connected to Spartan Coach yet. Visit the app to connect your WhatsApp number."
         )
         return Response(content="", media_type="text/xml")
+
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
+    state = session.state
 
     # Check if plan is accepted
     if not state.get("plan_accepted"):
@@ -1163,13 +1176,10 @@ async def whatsapp_webhook(
             new_message=content
         ):
             if event.is_final_response():
-                if (
-                    event.content
-                    and event.content.parts
-                    and hasattr(event.content.parts[0], "text")
-                    and event.content.parts[0].text
-                ):
-                    final_response_text = event.content.parts[0].text.strip()
+                if event.content and event.content.parts:
+                    # Concatenate ALL text parts
+                    response_parts = [p.text for p in event.content.parts if hasattr(p, 'text') and p.text]
+                    final_response_text = "".join(response_parts).strip()
 
         # Log the interaction
         log_agent_interaction(session_id, f"[WhatsApp] {Body}", final_response_text)
@@ -1250,6 +1260,19 @@ logger.info(f"Using database: {'Cloud SQL' if 'postgresql' in db_url else 'SQLit
 session_service = DatabaseSessionService(db_url=db_url)
 
 APP_NAME = "SpartanCoach"
+
+# Initialize database tables
+def init_db():
+    try:
+        engine = sqlalchemy.create_engine(db_url)
+        with engine.connect() as conn:
+            conn.execute(text("CREATE TABLE IF NOT EXISTS registered_users (username TEXT PRIMARY KEY)"))
+            conn.commit()
+        logger.info("Database tables initialized")
+    except Exception as e:
+        logger.error(f"Error initializing database: {e}")
+
+init_db()
 
 def get_user_id(request: Request) -> str:
     """Get user ID from logged-in user session."""
@@ -1479,13 +1502,10 @@ async def chat(chat_request: ChatRequest, user_id: str = Depends(get_user_id_req
             new_message=content
         ):
             if event.is_final_response():
-                if (
-                    event.content
-                    and event.content.parts
-                    and hasattr(event.content.parts[0], "text")
-                    and event.content.parts[0].text
-                ):
-                    final_response_text = event.content.parts[0].text.strip()
+                if event.content and event.content.parts:
+                    # Concatenate ALL text parts
+                    response_parts = [p.text for p in event.content.parts if hasattr(p, 'text') and p.text]
+                    final_response_text = "".join(response_parts).strip()
 
         # Log the interaction
         log_agent_interaction(session_id, chat_request.message, final_response_text)
@@ -1506,11 +1526,6 @@ async def chat(chat_request: ChatRequest, user_id: str = Depends(get_user_id_req
         logger.error(f"Error in chat endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-import json
-import sqlalchemy
-from sqlalchemy import text
-
-# ...
 
 def make_json_serializable(obj):
     """Recursively convert objects to JSON-serializable types."""
@@ -1624,10 +1639,12 @@ async def onboard(request: Request, onboard_data: OnboardRequest):
 
                 if event.is_final_response():
                     if event.content and event.content.parts:
+                        # Concatenate ALL text parts from the final response
+                        response_parts = []
                         for part in event.content.parts:
                             if hasattr(part, 'text') and part.text:
-                                final_response_text = part.text.strip()
-                                break
+                                response_parts.append(part.text)
+                        final_response_text = "".join(response_parts).strip()
 
             # If no final response but we have collected text, use the longest one that looks like a plan
             if not final_response_text and all_text_parts:
@@ -1659,8 +1676,19 @@ async def onboard(request: Request, onboard_data: OnboardRequest):
             logger.error(f"Error on attempt {attempt + 1}: {e}")
             if attempt < max_retries - 1:
                 import asyncio
-                await asyncio.sleep(2)
+                # Exponential backoff: 2, 4, 8 seconds
+                wait_time = 2 ** (attempt + 1)
+                # If it's a rate limit error, wait even longer
+                if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                    logger.warning(f"Rate limit hit, waiting {wait_time + 5} seconds...")
+                    await asyncio.sleep(wait_time + 5)
+                else:
+                    await asyncio.sleep(wait_time)
             else:
+                # On final attempt, don't raise if we have some text
+                if final_response_text and len(final_response_text) > 100:
+                    logger.warning("Final attempt failed with error, but using partially collected text.")
+                    break
                 raise
 
     if not final_response_text or len(final_response_text) < 100:
@@ -1827,7 +1855,9 @@ async def accept_plan(request: Request):
         ):
             if event.is_final_response():
                 if event.content and event.content.parts:
-                    daily_plan_text = event.content.parts[0].text.strip()
+                    # Concatenate ALL text parts
+                    response_parts = [p.text for p in event.content.parts if hasattr(p, 'text') and p.text]
+                    daily_plan_text = "".join(response_parts).strip()
 
         # Save the daily plan
         # Use our existing state copy (not ADK session) to avoid serialization issues
@@ -2906,14 +2936,100 @@ async def get_urgency_status(request: Request):
 
 
 @app.post("/api/trigger-checkin")
-async def trigger_checkin():
-    """Manually trigger a proactive check-in for testing."""
+async def trigger_checkin(request: Request, force: bool = False):
+    """Manually trigger a proactive check-in for testing.
+
+    Args:
+        force: If True, bypass hour check and run for current user immediately
+    """
     try:
-        await proactive_checkin()
-        return {"message": "Check-in triggered successfully!"}
+        if force:
+            # Force check-in for current user regardless of hour
+            user_id = get_user_id(request)
+            await _force_proactive_checkin_for_user(user_id)
+            return {"message": "Forced check-in triggered for current user!"}
+        else:
+            await proactive_checkin()
+            return {"message": "Check-in triggered successfully!"}
     except Exception as e:
         logger.error(f"Error triggering check-in: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+async def _force_proactive_checkin_for_user(user_id: str):
+    """Force proactive check-in for a user, bypassing hour checks."""
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
+    state = dict(session.state)
+
+    if not state.get("plan_accepted"):
+        logger.warning(f"User {user_id}: Plan not accepted, cannot force check-in.")
+        return
+
+    notification_settings = state.get("notification_settings", {})
+    timezone_str = notification_settings.get("timezone", "America/New_York")
+    now = get_user_local_time(timezone_str)
+
+    logger.info(f"FORCED check-in for user {user_id} at {now.strftime('%H:%M')} ({timezone_str})")
+
+    # Get user context
+    warrior_profile = state.get("warrior_profile", {})
+    user_name = warrior_profile.get("name", "Warrior")
+    user_reason = warrior_profile.get("reason", "")
+    user_goal = warrior_profile.get("goal", "")
+
+    # Get current progress
+    goals = state.get("daily_goals", [])
+    completed = sum(1 for g in goals if g.get("completed", False))
+    total = len(goals)
+    incomplete_goals = [g["name"] for g in goals if not g.get("completed", False)]
+    completion_percent = (completed / total * 100) if total > 0 else 0
+
+    water_intake = state.get("water_intake", {})
+    water_glasses = water_intake.get("glasses", 0)
+
+    daily_metrics = state.get("daily_metrics", {})
+    today = now.strftime("%Y-%m-%d")
+    today_metrics = daily_metrics.get(today, {})
+    steps = today_metrics.get("steps", 0)
+
+    # Build check-in prompt
+    checkin_prompt = f"""FORCED PROACTIVE CHECK-IN for {user_name}
+
+STATUS:
+- Goals: {completed}/{total} completed ({completion_percent:.0f}%)
+- Water: {water_glasses}/8 glasses
+- Steps: {steps:,}/10,000
+- Incomplete: {', '.join(incomplete_goals[:5]) if incomplete_goals else 'All complete!'}
+
+Generate a brief, motivating check-in message. Reference their goal: "{user_goal}" and reason: "{user_reason}"
+"""
+
+    content = types.Content(role="user", parts=[types.Part(text=checkin_prompt)])
+    final_response_text = ""
+
+    try:
+        async for event in runner.run_async(user_id=user_id, session_id=session_id, new_message=content):
+            if event.is_final_response() and event.content and event.content.parts:
+                response_parts = [p.text for p in event.content.parts if hasattr(p, 'text') and p.text]
+                final_response_text = "".join(response_parts).strip()
+
+        # Store as pending reminder
+        reminders = state.get("pending_reminders", [])
+        reminders.append({
+            "id": f"forced_checkin_{now.strftime('%H%M%S')}",
+            "type": "proactive_checkin",
+            "time": now.isoformat(),
+            "message": final_response_text[:500],
+            "read": False
+        })
+        state["pending_reminders"] = reminders[-10:]
+        force_update_state(session_id, state)
+
+        logger.info(f"Forced check-in complete for {user_id}. Reminder stored.")
+
+    except Exception as e:
+        logger.error(f"Error during forced check-in: {e}")
 
 
 # --- Scheduling ---
@@ -3225,7 +3341,9 @@ YOUR ORDERS: Based on the status above, issue COMMANDING orders to {user_name}.
     try:
         async for event in runner.run_async(user_id=user_id, session_id=session_id, new_message=content):
             if event.is_final_response() and event.content and event.content.parts:
-                final_response_text = event.content.parts[0].text.strip()
+                # Concatenate ALL text parts
+                response_parts = [p.text for p in event.content.parts if hasattr(p, 'text') and p.text]
+                final_response_text = "".join(response_parts).strip()
 
         # Store as pending reminder
         # Use our existing state copy (not ADK session) to avoid serialization issues
@@ -3727,7 +3845,9 @@ async def _reset_user_daily(user_id: str, session_id: str, state: dict, timezone
             ):
                 if event.is_final_response():
                     if event.content and event.content.parts:
-                        daily_plan_text = event.content.parts[0].text.strip()
+                        # Concatenate ALL text parts
+                        response_parts = [p.text for p in event.content.parts if hasattr(p, 'text') and p.text]
+                        daily_plan_text = "".join(response_parts).strip()
 
             # Save the new daily plan and parse schedule
             # Use our existing state copy (not ADK session) to avoid serialization issues

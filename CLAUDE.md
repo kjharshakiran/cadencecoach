@@ -22,9 +22,9 @@ pip install -r requirements.txt
 ### Environment Variables
 Configure in `.env`:
 ```bash
+GOOGLE_API_KEY=your_key_here     # Required for Gemini (Default)
 ANTHROPIC_API_KEY=your_key_here  # Required for Claude
-GOOGLE_API_KEY=your_key_here     # Required for Gemini
-MODEL_PROVIDER=anthropic          # Options: "anthropic" or "gemini"
+MODEL_PROVIDER=gemini            # Options: "gemini" or "anthropic"
 CLAUDE_MODEL=anthropic/claude-sonnet-4-20250514  # Optional, defaults to Sonnet
 ```
 

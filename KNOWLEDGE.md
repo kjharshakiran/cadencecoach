@@ -65,8 +65,8 @@ A comprehensive fitness accountability application built with Google Agent Devel
                                 │
                                 ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                     Claude API (via LiteLLM)                    │
-│              Model: claude-sonnet-4-20250514                      │
+│                    Gemini API (Primary)                         │
+│              Model: gemini-2.5-flash-lite                       │
 └─────────────────────────────────────────────────────────────────┘
                                 │
                                 ▼
@@ -84,8 +84,8 @@ A comprehensive fitness accountability application built with Google Agent Devel
 |-----------|------------|---------|
 | Backend Framework | FastAPI | latest |
 | Agent Framework | Google ADK | 0.3.0 |
-| LLM Provider | Claude (Anthropic) | claude-sonnet-4-20250514 |
-| LLM Wrapper | LiteLLM | 1.66.3 |
+| LLM Provider | Gemini (Google) | gemini-2.5-flash-lite |
+| LLM Wrapper | Google GenAI SDK | - |
 | Database | SQLite | - |
 | Session Management | google.adk.sessions.DatabaseSessionService | - |
 | Task Scheduler | APScheduler | latest |
@@ -112,9 +112,17 @@ apscheduler
 
 ## External APIs & Services
 
-### 1. Claude API (Anthropic)
+### 1. Google Generative AI (Primary)
 
 **Purpose**: Powers all AI agent conversations and reasoning.
+
+**Model**: `gemini-2.5-flash-lite`
+
+**Environment Variable**: `GOOGLE_API_KEY`
+
+### 2. Claude API (Anthropic - Optional)
+
+**Purpose**: Alternative LLM provider.
 
 **Integration**: Via LiteLLM wrapper in Google ADK
 
@@ -122,34 +130,16 @@ apscheduler
 ```python
 from google.adk.models.lite_llm import LiteLlm
 
-MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "anthropic")
+MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "gemini")
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "anthropic/claude-sonnet-4-20250514")
 
 def get_model():
     if MODEL_PROVIDER == "anthropic":
         return LiteLlm(model=CLAUDE_MODEL)
-    return GEMINI_MODEL  # Fallback to Gemini
+    return GEMINI_MODEL
 ```
 
 **Environment Variable**: `ANTHROPIC_API_KEY`
-
-**Retry Configuration** (server.py):
-```python
-retry_config = types.HttpRetryOptions(
-    attempts=5,
-    exp_base=7,
-    initial_delay=1,
-    http_status_codes=[429, 500, 503, 504]
-)
-```
-
-### 2. Google Generative AI (Optional Fallback)
-
-**Purpose**: Alternative LLM provider (Gemini)
-
-**Model**: `gemini-2.0-flash`
-
-**Environment Variable**: `GOOGLE_API_KEY`
 
 ---
 
