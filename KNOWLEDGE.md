@@ -1085,7 +1085,219 @@ Server runs at: `http://localhost:8000`
 
 ---
 
-*Last updated: December 2025*
+*Last updated: December 22, 2025*
+
+---
+
+## Notification System
+
+### Overview
+
+The notification system sends proactive coaching reminders to users based on their timezone and daily schedule. Notifications are stored in `pending_reminders` in each user's session state.
+
+### Notification Types
+
+| Type | Trigger | Description |
+|------|---------|-------------|
+| `proactive_checkin` | Hourly (7am-10pm user time) | Progress status with goals/water/steps |
+| `water_reminder` | Every 30 min | Hydration reminder if behind target |
+| `schedule_reminder` | 15-30 min before events | Upcoming meal/workout reminder |
+| `overdue_reminder` | After missed time | Alert for missed scheduled items |
+
+### Template-Based Notifications (Simplified)
+
+Notifications use simple templates instead of AI calls for speed and reliability:
+
+```python
+# Urgency levels determine message tone
+if urgency_level >= 3:  # RED - Critical
+    message = f"🚨 {user_name}, CRITICAL STATUS!\n\n{status_line}..."
+elif urgency_level >= 2:  # ORANGE - Urgent
+    message = f"⚠️ {user_name}, STATUS CHECK!\n\n{status_line}..."
+elif urgency_level >= 1:  # YELLOW - Attention
+    message = f"📋 {user_name}, PROGRESS UPDATE\n\n{status_line}..."
+else:  # GREEN - On track
+    message = f"✅ {user_name}, GREAT PROGRESS!\n\n{status_line}..."
+```
+
+### Scheduler Jobs
+
+```python
+scheduler.add_job(proactive_checkin, 'cron', minute=0)      # Every hour on the hour
+scheduler.add_job(water_reminder, 'cron', minute=30)        # Every hour at :30
+scheduler.add_job(schedule_reminder, 'cron', minute='*/15') # Every 15 minutes
+scheduler.add_job(midnight_reset, 'cron', minute=5)         # Every hour at :05
+```
+
+### User-Specific Notifications
+
+Each user has their own `pending_reminders` list in their session state. The scheduler:
+1. Gets all users from `registered_users` table
+2. Checks each user's timezone to determine local time
+3. Only sends notifications during user's wake/sleep hours
+4. Stores notifications in that user's session
+
+### Notification Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/notifications` | GET | Get pending notifications |
+| `/api/notifications/clear` | POST | Clear all notifications |
+| `/api/notifications/settings` | GET/POST | Get/update notification settings |
+| `/api/trigger-checkin` | POST | Manually trigger check-in |
+| `/api/trigger-checkin?force=true` | POST | Force check-in for current user |
+
+### Testing Notifications
+
+Use `test_notifications.py` to test:
+
+```bash
+python test_notifications.py                    # List all users
+python test_notifications.py <username>         # Trigger check-in for user
+python test_notifications.py <username> --add   # Add simple test notification
+python test_notifications.py <username> --view  # View user's notifications
+python test_notifications.py <username> --clear # Clear user's notifications
+```
+
+---
+
+## WhatsApp Integration
+
+### Twilio WhatsApp API
+
+WhatsApp notifications are sent via Twilio's API when enabled.
+
+**Configuration:**
+```env
+TWILIO_ACCOUNT_SID=your_account_sid
+TWILIO_AUTH_TOKEN=your_auth_token
+TWILIO_WHATSAPP_NUMBER=whatsapp:+14155238886
+```
+
+### Notification Settings
+
+Users must enable WhatsApp in their notification settings:
+
+```python
+notification_settings = {
+    "wake_time": "07:00",
+    "sleep_time": "22:00",
+    "enable_push": True,
+    "enable_whatsapp": True,        # Must be True
+    "whatsapp_number": "+1234567890", # User's WhatsApp number
+    "timezone": "America/New_York"
+}
+```
+
+### WhatsApp Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/whatsapp/status` | GET | Check connection status |
+| `/api/whatsapp/connect` | POST | Connect WhatsApp number |
+| `/api/whatsapp/disconnect` | POST | Disconnect WhatsApp |
+| `/api/whatsapp/test` | POST | Send test message |
+| `/api/whatsapp/toggle` | POST | Enable/disable notifications |
+
+---
+
+## Multi-User Support
+
+### User Registration
+
+Users are tracked in the `registered_users` table for scheduled tasks:
+
+```sql
+CREATE TABLE registered_users (
+    username TEXT PRIMARY KEY
+)
+```
+
+Users are automatically registered during onboarding.
+
+### User Identification
+
+```python
+def get_user_id(request: Request) -> str:
+    """Get user ID from logged-in user session."""
+    user = get_current_user(request)
+    if user:
+        return user.get("username", "anonymous")
+    return "anonymous"
+```
+
+### Session Isolation
+
+Each user has their own session with isolated:
+- `warrior_profile` - User's profile data
+- `master_plan` - Their transformation plan
+- `daily_goals` - Today's goals
+- `pending_reminders` - Their notifications
+- `notification_settings` - Their preferences
+
+---
+
+## Key Improvements (December 2025)
+
+### 1. Simplified Notifications
+
+**Before:** AI-generated messages for every check-in (slow, could fail)
+
+**After:** Template-based messages (instant, reliable)
+
+- Removed AI calls from `proactive_checkin` and `_force_proactive_checkin_for_user`
+- Messages use urgency-based templates with user data
+- Same message sent to both app and WhatsApp
+
+### 2. JSON Serialization Fixes
+
+Fixed serialization errors when saving session state:
+
+```python
+def make_json_serializable(obj):
+    """Recursively convert objects to JSON-serializable types."""
+    if obj is None or isinstance(obj, (str, int, float, bool)):
+        return obj
+    elif isinstance(obj, bytes):
+        return obj.decode('utf-8', errors='replace')
+    elif isinstance(obj, dict):
+        return {k: make_json_serializable(v) for k, v in obj.items()
+                if not k.startswith('_')}
+    # ... handles lists, datetimes, objects
+```
+
+### 3. Multi-Part Response Handling
+
+Fixed agent responses that span multiple parts:
+
+```python
+if event.is_final_response() and event.content and event.content.parts:
+    # Concatenate ALL text parts
+    response_parts = [p.text for p in event.content.parts
+                      if hasattr(p, 'text') and p.text]
+    final_response_text = "".join(response_parts).strip()
+```
+
+### 4. Template Placeholder Fix
+
+Fixed Gemini API errors by replacing `{X}` placeholders with `[X]` in agent prompts:
+
+```python
+# Before (caused "Context variable not found" errors)
+"You're {X} steps behind. MOVE NOW."
+
+# After
+"You're [steps_behind] steps behind. MOVE NOW."
+```
+
+### 5. Gemini as Primary Model
+
+Switched from Claude to Gemini as the default model provider:
+
+```python
+MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "gemini")
+GEMINI_MODEL = "gemini-2.5-flash-lite"
+```
 
 ---
 
