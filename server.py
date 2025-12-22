@@ -615,6 +615,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
             "auth_method": "password"
         }
         logger.info(f"User {uname} logged in via password")
+        register_user(uname)  # Register for scheduled tasks
         return RedirectResponse(url="/", status_code=302)
 
     # Fallback to default demo credentials (unchanged)
@@ -626,6 +627,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
             "auth_method": "password"
         }
         logger.info(f"User {username} logged in via default password")
+        register_user(username)  # Register for scheduled tasks
         return RedirectResponse(url="/", status_code=302)
 
     return RedirectResponse(url="/login?error=Invalid+username+or+password", status_code=302)
@@ -657,6 +659,7 @@ async def google_callback(request: Request):
             "auth_method": "google"
         }
         logger.info(f"User {user_info.get('email')} logged in via Google")
+        register_user(request.session["user"]["username"])  # Register for scheduled tasks
         return RedirectResponse(url="/", status_code=302)
     except Exception as e:
         logger.error(f"Google OAuth error: {e}")
@@ -1008,6 +1011,7 @@ async def whatsapp_connect(request: Request, data: WhatsAppConnectRequest):
     state["notification_settings"] = notification_settings
 
     force_update_state(session_id, state)
+    register_user(user_id)  # Ensure user is registered for scheduled tasks
 
     # Send test message to verify connection
     result = await whatsapp_service.send_test_message(phone_number)
@@ -1136,8 +1140,9 @@ async def whatsapp_webhook(
             # In a real app, we'd have a dedicated phone_numbers table
             result = conn.execute(text("SELECT user_id, state FROM sessions WHERE app_name = :app"), {"app": APP_NAME})
             for row in result.fetchall():
-                uid, state_json = row
-                state = json.loads(state_json)
+                uid, state_data = row
+                # Handle both string and dict types for state
+                state = state_data if isinstance(state_data, dict) else json.loads(state_data)
                 notif_settings = state.get("notification_settings", {})
                 if notif_settings.get("whatsapp_number") == f"+{phone_number}" or notif_settings.get("whatsapp_number") == phone_number:
                     user_id = uid
@@ -1175,6 +1180,7 @@ async def whatsapp_webhook(
             session_id=session_id,
             new_message=content
         ):
+            logger.info(f"WhatsApp Runner Event: {type(event).__name__}")
             if event.is_final_response():
                 if event.content and event.content.parts:
                     # Concatenate ALL text parts
@@ -1531,6 +1537,9 @@ def make_json_serializable(obj):
     """Recursively convert objects to JSON-serializable types."""
     if obj is None or isinstance(obj, (str, int, float, bool)):
         return obj
+    elif isinstance(obj, bytes):
+        # Decode bytes to string, replacing invalid chars
+        return obj.decode('utf-8', errors='replace')
     elif isinstance(obj, dict):
         return {k: make_json_serializable(v) for k, v in obj.items()
                 if not k.startswith('_')}  # Skip private/internal keys
@@ -2956,6 +2965,47 @@ async def trigger_checkin(request: Request, force: bool = False):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/test-notification")
+async def test_notification(request: Request):
+    """Send a test notification immediately to the current user."""
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
+    state = dict(session.state)
+    
+    now = datetime.now()
+    message = "⚔️ SPARTAN ALERT: This is a test of the emergency accountability system. DISCIPLINE IS FREEDOM! Execute your plan!"
+    
+    # Add to pending reminders
+    reminders = state.get("pending_reminders", [])
+    reminders.append({
+        "id": f"test_{now.strftime('%H%M%S')}",
+        "type": "test",
+        "time": now.isoformat(),
+        "message": message,
+        "read": False
+    })
+    state["pending_reminders"] = reminders[-10:]
+    force_update_state(session_id, state)
+    
+    # Send WhatsApp if enabled
+    notif_settings = state.get("notification_settings", {})
+    whatsapp_sent = False
+    if notif_settings.get("enable_whatsapp") and notif_settings.get("whatsapp_number"):
+        try:
+            await whatsapp_service.send_message(notif_settings["whatsapp_number"], message)
+            whatsapp_sent = True
+        except Exception as e:
+            logger.error(f"Test WhatsApp failed: {e}")
+            
+    return {
+        "success": True, 
+        "message": "Test notification sent!",
+        "whatsapp_sent": whatsapp_sent,
+        "reminder_id": reminders[-1]["id"]
+    }
+
+
 async def _force_proactive_checkin_for_user(user_id: str):
     """Force proactive check-in for a user, bypassing hour checks."""
     session_id = get_or_create_session_id(user_id)
@@ -2993,43 +3043,53 @@ async def _force_proactive_checkin_for_user(user_id: str):
     today_metrics = daily_metrics.get(today, {})
     steps = today_metrics.get("steps", 0)
 
-    # Build check-in prompt
-    checkin_prompt = f"""FORCED PROACTIVE CHECK-IN for {user_name}
+    # Get fitness targets
+    fitness_targets = state.get("fitness_targets", {})
+    water_target = fitness_targets.get("water_glasses", 8)
+    step_target = fitness_targets.get("daily_steps", 10000)
 
-STATUS:
-- Goals: {completed}/{total} completed ({completion_percent:.0f}%)
-- Water: {water_glasses}/8 glasses
-- Steps: {steps:,}/10,000
-- Incomplete: {', '.join(incomplete_goals[:5]) if incomplete_goals else 'All complete!'}
+    # Build simple template message (no AI call)
+    status_line = f"📊 Goals: {completed}/{total} ({completion_percent:.0f}%) | 💧 Water: {water_glasses}/{water_target} | 👟 Steps: {steps:,}/{step_target:,}"
 
-Generate a brief, motivating check-in message. Reference their goal: "{user_goal}" and reason: "{user_reason}"
-"""
+    if completed == total:
+        message = f"🏆 {user_name}, ALL GOALS COMPLETE!\n\n{status_line}\n\nOutstanding work today!"
+    elif completion_percent < 50:
+        message = f"⚠️ {user_name}, STATUS CHECK!\n\n{status_line}\n\n"
+        if incomplete_goals:
+            message += f"Pending: {', '.join(incomplete_goals[:3])}\n\n"
+        if user_reason:
+            message += f"Remember: \"{user_reason[:60]}...\"\n\n"
+        message += "TIME TO EXECUTE!"
+    else:
+        message = f"📋 {user_name}, PROGRESS UPDATE\n\n{status_line}\n\n"
+        message += f"Goal: {user_goal}\n\nKeep pushing!"
 
-    content = types.Content(role="user", parts=[types.Part(text=checkin_prompt)])
-    final_response_text = ""
+    final_response_text = message
 
-    try:
-        async for event in runner.run_async(user_id=user_id, session_id=session_id, new_message=content):
-            if event.is_final_response() and event.content and event.content.parts:
-                response_parts = [p.text for p in event.content.parts if hasattr(p, 'text') and p.text]
-                final_response_text = "".join(response_parts).strip()
+    # Store as pending reminder
+    reminders = state.get("pending_reminders", [])
+    reminders.append({
+        "id": f"forced_checkin_{now.strftime('%H%M%S')}",
+        "type": "proactive_checkin",
+        "time": now.isoformat(),
+        "message": final_response_text,
+        "read": False
+    })
+    state["pending_reminders"] = reminders[-10:]
+    force_update_state(session_id, state)
 
-        # Store as pending reminder
-        reminders = state.get("pending_reminders", [])
-        reminders.append({
-            "id": f"forced_checkin_{now.strftime('%H%M%S')}",
-            "type": "proactive_checkin",
-            "time": now.isoformat(),
-            "message": final_response_text[:500],
-            "read": False
-        })
-        state["pending_reminders"] = reminders[-10:]
-        force_update_state(session_id, state)
+    # Send WhatsApp if enabled
+    if notification_settings.get("enable_whatsapp") and notification_settings.get("whatsapp_number"):
+        try:
+            await whatsapp_service.send_message(
+                notification_settings["whatsapp_number"],
+                final_response_text
+            )
+            logger.info("WhatsApp forced check-in sent")
+        except Exception as wa_err:
+            logger.error(f"WhatsApp send error: {wa_err}")
 
-        logger.info(f"Forced check-in complete for {user_id}. Reminder stored.")
-
-    except Exception as e:
-        logger.error(f"Error during forced check-in: {e}")
+    logger.info(f"Forced check-in complete for {user_id}.")
 
 
 # --- Scheduling ---
@@ -3160,7 +3220,8 @@ async def _proactive_checkin_for_user(user_id: str):
     logger.info(f"User {user_id}: Timezone={timezone_str}, LocalTime={now.strftime('%H:%M')}, Hour={current_hour}")
 
     # Check if current hour is a check-in hour in user's timezone
-    checkin_hours = [7, 9, 11, 13, 15, 17, 19, 21]
+    # Added more frequent check-ins for better engagement
+    checkin_hours = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
     if current_hour not in checkin_hours:
         logger.debug(f"User {user_id}: Hour {current_hour} not a check-in hour in {timezone_str}")
         return
@@ -3274,113 +3335,74 @@ async def _proactive_checkin_for_user(user_id: str):
         state["daily_schedule"] = daily_schedule
         force_update_state(session_id, state)
 
-    # Find upcoming/current scheduled items
-    schedule_context = ""
-    if daily_schedule:
-        schedule_context = "\n📋 TODAY'S SCHEDULE:\n"
-        for item in daily_schedule[:8]:  # Show first 8 items
-            status = "✅" if item.get("completed") else "⏳"
-            schedule_context += f"   {status} {item['time']}: {item['activity'][:50]}\n"
-
     # Get dynamic fitness targets from master plan
     fitness_targets = state.get("fitness_targets", {})
     water_target = fitness_targets.get("water_glasses", 8)
     step_target = fitness_targets.get("daily_steps", 10000)
-    step_threshold = int(step_target * 0.7)  # 70% for evening warning
 
-    # Build comprehensive check-in prompt with ALL data
-    checkin_prompt = f"""SYSTEM TRIGGER: PROACTIVE CHECK-IN - {time_of_day.upper()} ({now.strftime('%I:%M %p')})
+    # ═══════════════════════════════════════════════════════════════
+    # SIMPLE TEMPLATE-BASED CHECK-IN (no AI calls - fast & reliable)
+    # ═══════════════════════════════════════════════════════════════
 
-══════════════════════════════════════════════════════════════
-🔥 WARRIOR: {user_name}
-══════════════════════════════════════════════════════════════
-GOAL: {user_goal}
-WHY: "{user_reason}"
-(Use this motivation to FUEL your commands!)
+    # Build status line
+    status_line = f"📊 Goals: {completed}/{total} ({completion_percent:.0f}%) | 💧 Water: {water_glasses}/{water_target} | 👟 Steps: {steps:,}/{step_target:,}"
 
-══════════════════════════════════════════════════════════════
-📊 STATUS REPORT
-══════════════════════════════════════════════════════════════
+    # Determine message based on urgency
+    if urgency_level >= 3:
+        # RED - Critical
+        message = f"🚨 {user_name}, CRITICAL STATUS!\n\n{status_line}\n\n⏰ Only {hours_remaining}h remaining!\n\n"
+        if incomplete_goals:
+            message += f"❌ Incomplete: {', '.join(incomplete_goals[:4])}\n\n"
+        if user_reason:
+            message += f"Remember: \"{user_reason[:60]}...\"\n\n"
+        message += "EXECUTE NOW. NO EXCUSES."
+    elif urgency_level >= 2:
+        # ORANGE - Urgent
+        message = f"⚠️ {user_name}, STATUS CHECK!\n\n{status_line}\n\n"
+        if incomplete_goals:
+            message += f"Pending: {', '.join(incomplete_goals[:3])}\n\n"
+        message += f"⏰ {hours_remaining}h left. TIME TO MOVE!"
+    elif urgency_level >= 1:
+        # YELLOW - Attention needed
+        message = f"📋 {user_name}, PROGRESS UPDATE\n\n{status_line}\n\n"
+        if incomplete_goals:
+            message += f"Focus on: {incomplete_goals[0] if incomplete_goals else 'All done!'}\n\n"
+        message += "Keep pushing! You've got this."
+    else:
+        # GREEN - On track
+        message = f"✅ {user_name}, GREAT PROGRESS!\n\n{status_line}\n\n"
+        if completed == total:
+            message += "🏆 ALL GOALS COMPLETE! Outstanding work!"
+        else:
+            message += f"On track! Just {total - completed} goals remaining."
 
-GOALS: {completed}/{total} completed ({completion_percent:.0f}%)
-INCOMPLETE: {', '.join(incomplete_goals[:6]) if incomplete_goals else 'NONE - ALL COMPLETE!'}
+    final_response_text = message
 
-💧 WATER: {water_glasses}/{water_target} glasses
-   Last logged: {f'{hours_since_water:.1f} hours ago' if hours_since_water else 'NEVER TODAY'}
-   {"⚠️ NEEDS HYDRATION REMINDER!" if (hours_since_water is None or hours_since_water >= 2) and water_glasses < water_target else ""}
+    # Store as pending reminder
+    reminders = state.get("pending_reminders", [])
+    reminders.append({
+        "id": f"checkin_{now.strftime('%H%M')}",
+        "type": "proactive_checkin",
+        "time": now.isoformat(),
+        "message": final_response_text,
+        "read": False
+    })
+    state["pending_reminders"] = reminders[-10:]  # Keep last 10
+    force_update_state(session_id, state)
 
-👟 STEPS: {steps:,}/{step_target:,} ({round(steps/step_target*100)}%)
-   Remaining: {max(0, step_target-steps):,} steps
-   {"⚠️ EVENING STEP CRUNCH!" if time_of_day == "evening" and steps < step_threshold else ""}
+    # Send WhatsApp notification if enabled
+    notification_settings = state.get("notification_settings", {})
+    if notification_settings.get("enable_whatsapp") and notification_settings.get("whatsapp_number"):
+        try:
+            await whatsapp_service.send_message(
+                notification_settings["whatsapp_number"],
+                final_response_text
+            )
+            logger.info("WhatsApp proactive check-in sent")
+        except Exception as wa_err:
+            logger.error(f"WhatsApp send error: {wa_err}")
 
-⏰ TIME: {hours_remaining} hours until end of day (10 PM)
-{schedule_context}
-══════════════════════════════════════════════════════════════
-🚨 URGENCY LEVEL: {urgency_level} ({urgency_labels[urgency_level]})
-══════════════════════════════════════════════════════════════
-Factors: {', '.join(urgency_factors) if urgency_factors else 'None - on track'}
-Recommended tone: {urgency_tones[urgency_level]}
-
-{f'''
-📅 CURRENT TIME GAP AVAILABLE: {current_gap["duration"]} minutes
-Suggested activity: {"Push-ups, burpees, energizing exercises" if current_gap["time_of_day"] == "morning" else "Standing break, stretches, quick walk" if current_gap["time_of_day"] == "afternoon" else "Walking, jogging, sports to hit step goal"}
-''' if current_gap else ''}
-══════════════════════════════════════════════════════════════
-YOUR ORDERS: Based on the status above, issue COMMANDING orders to {user_name}.
-- DO NOT use any tools - all data is provided above
-- Be {urgency_tones[urgency_level]}
-- Reference their WHY ("{user_reason[:50]}...") to motivate them
-- Address the most critical gaps first
-- If there are scheduled items coming up, remind them
-- End with a specific action they should take RIGHT NOW
-══════════════════════════════════════════════════════════════"""
-
-    content = types.Content(role="user", parts=[types.Part(text=checkin_prompt)])
-    final_response_text = ""
-
-    try:
-        async for event in runner.run_async(user_id=user_id, session_id=session_id, new_message=content):
-            if event.is_final_response() and event.content and event.content.parts:
-                # Concatenate ALL text parts
-                response_parts = [p.text for p in event.content.parts if hasattr(p, 'text') and p.text]
-                final_response_text = "".join(response_parts).strip()
-
-        # Store as pending reminder
-        # Use our existing state copy (not ADK session) to avoid serialization issues
-        reminders = state.get("pending_reminders", [])
-        reminders.append({
-            "id": f"checkin_{now.strftime('%H%M')}",
-            "type": "proactive_checkin",
-            "time": now.isoformat(),
-            "message": final_response_text[:500],  # Truncate for storage
-            "read": False
-        })
-        state["pending_reminders"] = reminders[-10:]  # Keep last 10
-        force_update_state(session_id, state)
-
-        # Send WhatsApp notification if enabled
-        notification_settings = state.get("notification_settings", {})
-        if notification_settings.get("enable_whatsapp") and notification_settings.get("whatsapp_number"):
-            try:
-                await whatsapp_service.send_template_message(
-                    notification_settings["whatsapp_number"],
-                    "proactive_checkin",
-                    completed=completed,
-                    total=total,
-                    percentage=round(completion_percent),
-                    urgency_level=f"{urgency_level} ({urgency_labels[urgency_level]})",
-                    message=final_response_text[:300],
-                    hours_remaining=hours_remaining
-                )
-                logger.info("WhatsApp proactive check-in sent")
-            except Exception as wa_err:
-                logger.error(f"WhatsApp send error: {wa_err}")
-
-        log_agent_interaction(session_id, f"PROACTIVE_CHECKIN_{time_of_day.upper()}", final_response_text)
-        logger.info(f"Proactive check-in complete. Response stored as reminder.")
-
-    except Exception as e:
-        logger.error(f"Error during proactive check-in: {e}")
+    logger.info(f"Proactive check-in complete for {user_name}.")
 
 
 async def water_reminder():
