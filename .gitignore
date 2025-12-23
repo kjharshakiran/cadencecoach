@@ -4,3 +4,12 @@ __pycache__/
 .DS_Store
 spartan_phalanx.db
 agent_logs.jsonl
+
+# Google Cloud SDK
+google-cloud-sdk/
+google-cloud-cli-darwin-arm.tar.gz
+*.pyc
+__pycache__/
+*.db
+*.log
+
