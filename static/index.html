@@ -2265,6 +2265,61 @@
             </div>
         </div>
 
+        <!-- Notifications Hub -->
+        <div class="integration-category">🔔 Notifications Hub</div>
+        <div class="integrations-grid">
+            <!-- Upcoming Notifications -->
+            <div class="integration-card" id="notifications-schedule-card">
+                <div class="integration-header">
+                    <div class="integration-icon" style="background: rgba(59, 130, 246, 0.1);">📅</div>
+                    <div class="integration-title">
+                        <h3>Upcoming</h3>
+                        <span id="notif-current-time">Loading...</span>
+                    </div>
+                    <button onclick="loadNotificationSchedule()"
+                        style="background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">
+                        Refresh
+                    </button>
+                </div>
+                <div id="upcoming-notifications" style="margin: 12px 0; max-height: 200px; overflow-y: auto;">
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">Loading schedule...</p>
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 12px;">
+                    <button onclick="sendTestNotification()"
+                        style="flex: 1; padding: 8px; background: linear-gradient(135deg, var(--accent-color), #b91c1c); border: none; color: white; border-radius: 6px; font-size: 0.75rem; cursor: pointer; text-transform: uppercase;">
+                        Send Test
+                    </button>
+                    <button onclick="triggerForceCheckin()"
+                        style="flex: 1; padding: 8px; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); border-radius: 6px; font-size: 0.75rem; cursor: pointer; text-transform: uppercase;">
+                        Force Check-in
+                    </button>
+                </div>
+            </div>
+
+            <!-- Notification History -->
+            <div class="integration-card" id="notifications-history-card">
+                <div class="integration-header">
+                    <div class="integration-icon" style="background: rgba(34, 197, 94, 0.1);">📜</div>
+                    <div class="integration-title">
+                        <h3>History</h3>
+                        <span id="notif-history-count">0 notifications</span>
+                    </div>
+                    <button onclick="clearAllNotifications()"
+                        style="background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">
+                        Clear All
+                    </button>
+                </div>
+                <div id="notification-history" style="margin: 12px 0; max-height: 200px; overflow-y: auto;">
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">No notifications yet</p>
+                </div>
+                <div class="integration-features">
+                    <span class="integration-feature">Check-ins</span>
+                    <span class="integration-feature">Water</span>
+                    <span class="integration-feature">Reminders</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Trust But Verify Banner -->
         <div class="trust-verify-banner" style="margin-top: 20px;">
             <div class="icon">🔍</div>
@@ -3110,8 +3165,115 @@
                     body: JSON.stringify({ wake_time: wakeTime, sleep_time: sleepTime })
                 });
                 console.log('Active hours updated:', wakeTime, '-', sleepTime);
+                // Reload schedule after updating hours
+                loadNotificationSchedule();
             } catch (error) {
                 console.error('Error updating active hours:', error);
+            }
+        }
+
+        // --- Notifications Hub ---
+        async function loadNotificationSchedule() {
+            try {
+                const response = await fetch(`${API_URL}/notifications/schedule`);
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Update current time
+                    document.getElementById('notif-current-time').textContent = data.current_time;
+
+                    // Render upcoming notifications
+                    const upcomingDiv = document.getElementById('upcoming-notifications');
+                    if (data.upcoming && data.upcoming.length > 0) {
+                        upcomingDiv.innerHTML = data.upcoming.map(n => `
+                            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+                                <span style="font-size: 1.2rem;">${n.icon}</span>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 0.85rem; color: var(--text-color);">${n.label}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">${n.scheduled_time}</div>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        upcomingDiv.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">No more notifications scheduled for today</p>';
+                    }
+
+                    // Render notification history
+                    const historyDiv = document.getElementById('notification-history');
+                    document.getElementById('notif-history-count').textContent = `${data.history.length} notifications`;
+
+                    if (data.history && data.history.length > 0) {
+                        historyDiv.innerHTML = data.history.map(n => `
+                            <div style="padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="font-size: 0.8rem; color: var(--accent-color); text-transform: uppercase;">${n.type.replace('_', ' ')}</span>
+                                    <span style="font-size: 0.7rem; color: var(--text-muted);">${formatNotifTime(n.time)}</span>
+                                </div>
+                                <div style="font-size: 0.8rem; color: var(--text-color); margin-top: 4px;">${n.message}</div>
+                            </div>
+                        `).join('');
+                    } else {
+                        historyDiv.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">No notifications yet. Accept your plan to start receiving check-ins!</p>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading notification schedule:', error);
+            }
+        }
+
+        function formatNotifTime(isoTime) {
+            if (!isoTime) return '';
+            try {
+                const date = new Date(isoTime);
+                const now = new Date();
+                const isToday = date.toDateString() === now.toDateString();
+                if (isToday) {
+                    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                }
+                return date.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' +
+                       date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            } catch {
+                return isoTime;
+            }
+        }
+
+        async function sendTestNotification() {
+            try {
+                const response = await fetch(`${API_URL}/test-notification`, { method: 'POST' });
+                if (response.ok) {
+                    const data = await response.json();
+                    alert('Test notification sent! Check the bell icon.');
+                    loadNotificationSchedule();
+                    loadNotifications();
+                }
+            } catch (error) {
+                console.error('Error sending test notification:', error);
+                alert('Failed to send test notification');
+            }
+        }
+
+        async function triggerForceCheckin() {
+            try {
+                const response = await fetch(`${API_URL}/force-checkin`, { method: 'POST' });
+                if (response.ok) {
+                    alert('Forced check-in triggered! Check the bell icon.');
+                    loadNotificationSchedule();
+                    loadNotifications();
+                }
+            } catch (error) {
+                console.error('Error triggering force check-in:', error);
+                alert('Failed to trigger check-in');
+            }
+        }
+
+        async function clearAllNotifications() {
+            if (!confirm('Clear all notification history?')) return;
+            try {
+                await fetch(`${API_URL}/notifications/clear`, { method: 'POST' });
+                loadNotificationSchedule();
+                loadNotifications();
+            } catch (error) {
+                console.error('Error clearing notifications:', error);
             }
         }
 
@@ -4338,6 +4500,7 @@
         loadWhoopStatus(); // Load Whoop connection status
         loadWhatsAppStatus(); // Load WhatsApp connection status
         loadTimezones(); // Load timezone options and settings
+        loadNotificationSchedule(); // Load notifications schedule
 
         // Initialize trackers after a short delay to ensure DOM is ready
         setTimeout(initTrackers, 500);

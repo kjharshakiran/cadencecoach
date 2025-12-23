@@ -2813,6 +2813,106 @@ async def get_notification_settings(request: Request):
     })
 
 
+@app.get("/api/notifications/schedule")
+async def get_notification_schedule(request: Request):
+    """Get upcoming notification schedule and history for the current user."""
+    from datetime import timedelta
+    import pytz
+
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
+    state = session.state
+
+    # Get user's timezone
+    notif_settings = state.get("notification_settings", {})
+    user_tz_str = notif_settings.get("timezone", "America/New_York")
+    wake_time = notif_settings.get("wake_time", "07:00")
+    sleep_time = notif_settings.get("sleep_time", "22:00")
+
+    try:
+        user_tz = pytz.timezone(user_tz_str)
+    except:
+        user_tz = pytz.timezone("America/New_York")
+
+    now_utc = datetime.now(pytz.UTC)
+    now_user = now_utc.astimezone(user_tz)
+    current_hour = now_user.hour
+
+    # Parse wake/sleep hours
+    wake_hour = int(wake_time.split(":")[0])
+    sleep_hour = int(sleep_time.split(":")[0])
+
+    # Calculate upcoming notifications based on schedule
+    upcoming = []
+
+    # Check-in hours (in user's timezone)
+    checkin_hours = [7, 9, 11, 13, 15, 17, 19, 21]
+    for hour in checkin_hours:
+        if wake_hour <= hour < sleep_hour:
+            if hour > current_hour:
+                next_time = now_user.replace(hour=hour, minute=0, second=0, microsecond=0)
+                upcoming.append({
+                    "type": "proactive_checkin",
+                    "label": "Progress Check-in",
+                    "scheduled_time": next_time.strftime("%I:%M %p"),
+                    "icon": "📊"
+                })
+            elif hour == current_hour:
+                upcoming.append({
+                    "type": "proactive_checkin",
+                    "label": "Progress Check-in",
+                    "scheduled_time": "Now",
+                    "icon": "📊"
+                })
+
+    # Water reminder hours (in user's timezone)
+    water_hours = [8, 10, 12, 14, 16, 18, 20]
+    for hour in water_hours:
+        if wake_hour <= hour < sleep_hour:
+            if hour > current_hour:
+                next_time = now_user.replace(hour=hour, minute=30, second=0, microsecond=0)
+                upcoming.append({
+                    "type": "water_reminder",
+                    "label": "Water Reminder",
+                    "scheduled_time": next_time.strftime("%I:%M %p"),
+                    "icon": "💧"
+                })
+
+    # Sort by time
+    def parse_time(t):
+        if t["scheduled_time"] == "Now":
+            return 0
+        try:
+            return datetime.strptime(t["scheduled_time"], "%I:%M %p").hour * 60 + datetime.strptime(t["scheduled_time"], "%I:%M %p").minute
+        except:
+            return 999
+
+    upcoming.sort(key=parse_time)
+
+    # Get notification history (pending_reminders)
+    history = state.get("pending_reminders", [])
+    # Format history for display
+    formatted_history = []
+    for r in reversed(history[-10:]):  # Last 10, newest first
+        formatted_history.append({
+            "id": r.get("id", ""),
+            "type": r.get("type", "unknown"),
+            "message": r.get("message", "")[:100] + "..." if len(r.get("message", "")) > 100 else r.get("message", ""),
+            "time": r.get("time", ""),
+            "read": r.get("read", False)
+        })
+
+    return {
+        "current_time": now_user.strftime("%I:%M %p %Z"),
+        "timezone": user_tz_str,
+        "active_hours": f"{wake_time} - {sleep_time}",
+        "upcoming": upcoming[:6],  # Next 6 notifications
+        "history": formatted_history,
+        "plan_accepted": state.get("plan_accepted", False)
+    }
+
+
 @app.get("/api/timezones")
 async def get_timezones():
     """Get list of common timezones for selection."""
@@ -2999,11 +3099,24 @@ async def test_notification(request: Request):
             logger.error(f"Test WhatsApp failed: {e}")
             
     return {
-        "success": True, 
+        "success": True,
         "message": "Test notification sent!",
         "whatsapp_sent": whatsapp_sent,
         "reminder_id": reminders[-1]["id"]
     }
+
+
+@app.post("/api/force-checkin")
+async def force_checkin_endpoint(request: Request):
+    """Manually trigger a proactive check-in for the current user."""
+    user_id = get_user_id(request)
+
+    try:
+        await _force_proactive_checkin_for_user(user_id)
+        return {"success": True, "message": "Check-in triggered!"}
+    except Exception as e:
+        logger.error(f"Force check-in failed for {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 async def _force_proactive_checkin_for_user(user_id: str):
