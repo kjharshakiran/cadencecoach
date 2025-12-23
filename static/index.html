@@ -1811,9 +1811,9 @@
         <button class="nav-tab" onclick="switchTab('integrations')">Integrations</button>
     </div>
 
-    <div class="container">
+    <div class="container" id="onboarding-container" style="display: none;">
         <!-- Onboarding Form (hidden by default, shown if not onboarded) -->
-        <div id="onboarding-form" class="section" style="display: none;">
+        <div id="onboarding-form" class="section">
             <div class="form-grid">
                 <div class="input-group">
                     <label for="name">Name</label>
@@ -1871,7 +1871,10 @@
                 </div>
             </div>
         </div>
+    </div>
 
+    <!-- Main Content Container (outside onboarding container) -->
+    <div class="container" id="main-container" style="display: none;">
         <!-- Chat Interface -->
         <div id="chat-interface" class="section">
             <div style="display: flex; gap: 20px; height: 100%; overflow: hidden;">
@@ -2127,9 +2130,8 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <button id="reset-btn" type="button" onclick="resetData()">⚠ FACTORY RESET</button>
+        <button id="reset-btn" type="button" onclick="resetData()">⚠ FACTORY RESET</button>
 
     <!-- Goal Accomplished Modal -->
     <div id="celebration-modal"
@@ -2686,6 +2688,7 @@
             </p>
         </div>
     </div>
+    </div> <!-- End main-container -->
 
     <script>
         // Use relative URL for API - works in both dev and production
@@ -3365,9 +3368,10 @@
                 const data = await response.json();
 
                 if (data.profile_locked) {
-                    // Hide form, show chat interface
+                    // Hide onboarding, show main content
                     document.getElementById('onboarding-form').classList.remove('active');
-                    document.getElementById('onboarding-form').style.display = 'none';
+                    document.getElementById('onboarding-container').style.display = 'none';
+                    document.getElementById('main-container').style.display = 'block';
                     document.getElementById('nav-tabs').style.display = 'flex';
                     switchTab('chat');
 
@@ -3398,14 +3402,16 @@
                 } else {
                     // Profile not locked, show form and hide nav
                     document.getElementById('onboarding-form').classList.add('active');
-                    document.getElementById('onboarding-form').style.display = 'flex';
+                    document.getElementById('onboarding-container').style.display = 'block';
+                    document.getElementById('main-container').style.display = 'none';
                     document.getElementById('nav-tabs').style.display = 'none';
                 }
             } catch (error) {
                 console.error("Error checking state:", error);
                 // Fallback to form on error
                 document.getElementById('onboarding-form').classList.add('active');
-                document.getElementById('onboarding-form').style.display = 'flex';
+                document.getElementById('onboarding-container').style.display = 'block';
+                document.getElementById('main-container').style.display = 'none';
             }
         }
 
@@ -3460,9 +3466,10 @@
 
                 clearInterval(messageInterval);
 
-                // Transition UI to chat interface - hide form completely
+                // Transition UI to chat interface - hide onboarding, show main
                 document.getElementById('onboarding-form').classList.remove('active');
-                document.getElementById('onboarding-form').style.display = 'none';
+                document.getElementById('onboarding-container').style.display = 'none';
+                document.getElementById('main-container').style.display = 'block';
                 document.getElementById('nav-tabs').style.display = 'flex';
                 switchTab('chat');
                 initCharts();
