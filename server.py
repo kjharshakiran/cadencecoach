@@ -1802,10 +1802,50 @@ async def manual_daily_reset():
     return {"message": "Daily reset complete. NEW DAY, NEW BATTLES!"}
 
 
+async def check_and_trigger_daily_reset(user_id: str) -> bool:
+    """Check if daily reset is needed and trigger it. Returns True if reset was performed."""
+    try:
+        session_id = get_or_create_session_id(user_id)
+        session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
+        state = dict(session.state)
+
+        if not state.get("plan_accepted"):
+            return False
+
+        # Get user's timezone
+        notification_settings = state.get("notification_settings", {})
+        timezone_str = notification_settings.get("timezone", "America/New_York")
+        user_time = get_user_local_time(timezone_str)
+        today_str = user_time.strftime("%Y-%m-%d")
+
+        # Check if reset already happened today
+        last_reset = state.get("last_daily_reset")
+        if last_reset == today_str:
+            return False
+
+        # Check if daily goals are from a previous day
+        daily_goals = state.get("daily_goals", [])
+        if daily_goals and daily_goals[0].get("date") != today_str:
+            logger.info(f"User {user_id}: Triggering catch-up daily reset (last reset: {last_reset}, today: {today_str})")
+            state["last_daily_reset"] = today_str
+            await _reset_user_daily(user_id, session_id, state, timezone_str)
+            return True
+
+        return False
+    except Exception as e:
+        logger.error(f"Error in catch-up reset for {user_id}: {e}")
+        return False
+
+
 @app.get("/api/state", response_model=StateResponse)
 async def get_state(request: Request):
     user_id = get_user_id(request)
     session_id = get_or_create_session_id(user_id)
+
+    # Check if daily reset is needed (handles Cloud Run sleeping through midnight)
+    await check_and_trigger_daily_reset(user_id)
+
+    # Re-fetch state after potential reset
     session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
     return StateResponse(
