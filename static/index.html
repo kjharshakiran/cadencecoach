@@ -461,6 +461,27 @@
             gap: 8px;
         }
 
+        .coaching-style-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(63, 63, 70, 0.5);
+            border-radius: 12px;
+            padding: 15px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .coaching-style-card:hover {
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        .coaching-style-card.selected {
+            border-color: var(--accent-color);
+            background: rgba(220, 38, 38, 0.15);
+            box-shadow: 0 0 15px rgba(220, 38, 38, 0.3);
+        }
+
         label {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.7rem;
@@ -1851,6 +1872,27 @@
                 <textarea id="reason"
                     placeholder="e.g., I want to be healthy for my kids, I want to feel confident, I want to prove to myself I can do this..."
                     required style="min-height: 80px; resize: vertical;"></textarea>
+            </div>
+
+            <div class="input-group">
+                <label>Choose Your Coaching Style</label>
+                <div id="coaching-style-picker" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px;">
+                    <div class="coaching-style-card selected" data-style="drill_sergeant" onclick="selectCoachingStyle(this)">
+                        <div style="font-size: 1.5rem;">🪖</div>
+                        <div style="font-weight: bold; font-size: 0.85rem;">Drill Sergeant</div>
+                        <div style="font-size: 0.65rem; color: var(--text-muted);">Tough love, no excuses</div>
+                    </div>
+                    <div class="coaching-style-card" data-style="supportive_mentor" onclick="selectCoachingStyle(this)">
+                        <div style="font-size: 1.5rem;">🤝</div>
+                        <div style="font-weight: bold; font-size: 0.85rem;">Supportive Mentor</div>
+                        <div style="font-size: 0.65rem; color: var(--text-muted);">Encouraging, celebrates wins</div>
+                    </div>
+                    <div class="coaching-style-card" data-style="data_analyst" onclick="selectCoachingStyle(this)">
+                        <div style="font-size: 1.5rem;">📊</div>
+                        <div style="font-weight: bold; font-size: 0.85rem;">Data Coach</div>
+                        <div style="font-size: 0.65rem; color: var(--text-muted);">Facts-focused, minimal fluff</div>
+                    </div>
+                </div>
             </div>
 
             <button class="primary-btn" onclick="submitProfile()">INITIATE PROTOCOL</button>
@@ -3627,6 +3669,18 @@
             }
         }
 
+        function selectCoachingStyle(card) {
+            // Remove selected from all cards
+            document.querySelectorAll('.coaching-style-card').forEach(c => c.classList.remove('selected'));
+            // Add selected to clicked card
+            card.classList.add('selected');
+        }
+
+        function getSelectedCoachingStyle() {
+            const selected = document.querySelector('.coaching-style-card.selected');
+            return selected ? selected.dataset.style : 'drill_sergeant';
+        }
+
         async function submitProfile() {
             const profile = {
                 name: document.getElementById('name').value,
@@ -3635,7 +3689,8 @@
                 weight: parseFloat(document.getElementById('weight').value),
                 goal: document.getElementById('goal').value,
                 target_date: document.getElementById('target-date').value,
-                reason: document.getElementById('reason').value
+                reason: document.getElementById('reason').value,
+                coaching_style: getSelectedCoachingStyle()
             };
 
             if (!profile.name || !profile.age || !profile.goal || !profile.reason) {

@@ -1332,6 +1332,7 @@ class OnboardRequest(BaseModel):
     goal: str
     target_date: str
     reason: str
+    coaching_style: str = "drill_sergeant"  # drill_sergeant, supportive_mentor, data_analyst
 
 class StateResponse(BaseModel):
     user_name: str
@@ -1381,6 +1382,7 @@ def get_or_create_session_id(user_id: str):
     initial_state = {
         "user_name": "",
         "warrior_profile": {},
+        "coaching_style": "drill_sergeant",  # Options: drill_sergeant, supportive_mentor, data_analyst
         "profile_locked": False,
         "master_plan": {},
         "plan_accepted": False,
@@ -1600,6 +1602,7 @@ async def onboard(request: Request, onboard_data: OnboardRequest):
         "target_date": onboard_data.target_date,
         "reason": onboard_data.reason
     }
+    current_state["coaching_style"] = onboard_data.coaching_style
     current_state["profile_locked"] = True
     # Force update the database
     force_update_state(session_id, current_state)
@@ -3364,6 +3367,93 @@ async def proactive_checkin():
             logger.error(f"Error in proactive check-in for user {user_id}: {e}")
 
 
+def get_coaching_message(coaching_style: str, urgency_level: int, user_name: str,
+                         status_line: str, hours_remaining: int, incomplete_goals: list,
+                         user_reason: str, completed: int, total: int) -> str:
+    """Generate a coaching message based on style and urgency."""
+
+    if coaching_style == "supportive_mentor":
+        # Encouraging, celebrates wins, gentle nudges
+        if urgency_level >= 3:
+            message = f"💪 Hey {user_name}, checking in on you!\n\n{status_line}\n\n"
+            message += f"I know you've got a lot going on, but we're running low on time ({hours_remaining}h left).\n\n"
+            if incomplete_goals:
+                message += f"Let's focus on: {incomplete_goals[0]}\n\n"
+            if user_reason:
+                message += f"Remember why you started: \"{user_reason[:60]}...\"\n\n"
+            message += "You've got this! One step at a time. 🌟"
+        elif urgency_level >= 2:
+            message = f"👋 {user_name}, quick check-in!\n\n{status_line}\n\n"
+            if incomplete_goals:
+                message += f"Still on your list: {', '.join(incomplete_goals[:3])}\n\n"
+            message += f"You have {hours_remaining}h - totally doable! Let's keep the momentum going. 🚀"
+        elif urgency_level >= 1:
+            message = f"😊 {user_name}, looking good!\n\n{status_line}\n\n"
+            message += f"You're making progress! Maybe tackle {incomplete_goals[0] if incomplete_goals else 'a quick win'} next?\n\n"
+            message += "Proud of you for showing up today! ⭐"
+        else:
+            message = f"🎉 {user_name}, you're crushing it!\n\n{status_line}\n\n"
+            if completed == total:
+                message += "ALL GOALS COMPLETE! You should be so proud of yourself! 🏆"
+            else:
+                message += f"Amazing progress! Just {total - completed} to go. You're doing incredible! 💪"
+
+    elif coaching_style == "data_analyst":
+        # Facts-focused, minimal emotion, just the numbers
+        if urgency_level >= 3:
+            message = f"⏰ STATUS: CRITICAL | {hours_remaining}h remaining\n\n{status_line}\n\n"
+            completion_rate = (completed / total * 100) if total > 0 else 0
+            message += f"Completion rate: {completion_rate:.1f}%\n"
+            if incomplete_goals:
+                message += f"Pending items: {len(incomplete_goals)}\n"
+            message += f"\nRecommendation: Prioritize high-impact tasks."
+        elif urgency_level >= 2:
+            message = f"📊 STATUS UPDATE\n\n{status_line}\n\n"
+            message += f"Time remaining: {hours_remaining}h\n"
+            message += f"Pending: {len(incomplete_goals)} items\n"
+            message += "\nAction: Review and execute pending items."
+        elif urgency_level >= 1:
+            message = f"📈 PROGRESS REPORT\n\n{status_line}\n\n"
+            completion_rate = (completed / total * 100) if total > 0 else 0
+            message += f"Daily completion rate: {completion_rate:.1f}%\n"
+            message += f"Remaining: {total - completed} items\n"
+            message += "\nStatus: On track. Continue execution."
+        else:
+            message = f"✓ DAILY STATUS: OPTIMAL\n\n{status_line}\n\n"
+            if completed == total:
+                message += "All objectives completed. 100% completion rate.\nStatus: Excellent performance."
+            else:
+                message += f"Progress: {completed}/{total} ({completed/total*100:.0f}%)\nStatus: Ahead of schedule."
+
+    else:  # drill_sergeant (default)
+        # Tough love, no excuses, military style
+        if urgency_level >= 3:
+            message = f"🚨 {user_name}, CRITICAL STATUS!\n\n{status_line}\n\n⏰ Only {hours_remaining}h remaining!\n\n"
+            if incomplete_goals:
+                message += f"❌ Incomplete: {', '.join(incomplete_goals[:4])}\n\n"
+            if user_reason:
+                message += f"Remember: \"{user_reason[:60]}...\"\n\n"
+            message += "EXECUTE NOW. NO EXCUSES."
+        elif urgency_level >= 2:
+            message = f"⚠️ {user_name}, STATUS CHECK!\n\n{status_line}\n\n"
+            if incomplete_goals:
+                message += f"Pending: {', '.join(incomplete_goals[:3])}\n\n"
+            message += f"⏰ {hours_remaining}h left. TIME TO MOVE!"
+        elif urgency_level >= 1:
+            message = f"📋 {user_name}, PROGRESS UPDATE\n\n{status_line}\n\n"
+            if incomplete_goals:
+                message += f"Focus on: {incomplete_goals[0] if incomplete_goals else 'All done!'}\n\n"
+            message += "Keep pushing! You've got this."
+        else:
+            message = f"✅ {user_name}, GREAT PROGRESS!\n\n{status_line}\n\n"
+            if completed == total:
+                message += "🏆 ALL GOALS COMPLETE! Outstanding work!"
+            else:
+                message += f"On track! Just {total - completed} goals remaining."
+
+    return message
+
+
 async def _proactive_checkin_for_user(user_id: str):
     """Proactive check-in for a single user."""
     session_id = get_or_create_session_id(user_id)
@@ -3511,36 +3601,21 @@ async def _proactive_checkin_for_user(user_id: str):
     # Build status line
     status_line = f"📊 Goals: {completed}/{total} ({completion_percent:.0f}%) | 💧 Water: {water_glasses}/{water_target} | 👟 Steps: {steps:,}/{step_target:,}"
 
-    # Determine message based on urgency
-    if urgency_level >= 3:
-        # RED - Critical
-        message = f"🚨 {user_name}, CRITICAL STATUS!\n\n{status_line}\n\n⏰ Only {hours_remaining}h remaining!\n\n"
-        if incomplete_goals:
-            message += f"❌ Incomplete: {', '.join(incomplete_goals[:4])}\n\n"
-        if user_reason:
-            message += f"Remember: \"{user_reason[:60]}...\"\n\n"
-        message += "EXECUTE NOW. NO EXCUSES."
-    elif urgency_level >= 2:
-        # ORANGE - Urgent
-        message = f"⚠️ {user_name}, STATUS CHECK!\n\n{status_line}\n\n"
-        if incomplete_goals:
-            message += f"Pending: {', '.join(incomplete_goals[:3])}\n\n"
-        message += f"⏰ {hours_remaining}h left. TIME TO MOVE!"
-    elif urgency_level >= 1:
-        # YELLOW - Attention needed
-        message = f"📋 {user_name}, PROGRESS UPDATE\n\n{status_line}\n\n"
-        if incomplete_goals:
-            message += f"Focus on: {incomplete_goals[0] if incomplete_goals else 'All done!'}\n\n"
-        message += "Keep pushing! You've got this."
-    else:
-        # GREEN - On track
-        message = f"✅ {user_name}, GREAT PROGRESS!\n\n{status_line}\n\n"
-        if completed == total:
-            message += "🏆 ALL GOALS COMPLETE! Outstanding work!"
-        else:
-            message += f"On track! Just {total - completed} goals remaining."
+    # Get user's coaching style preference
+    coaching_style = state.get("coaching_style", "drill_sergeant")
 
-    final_response_text = message
+    # Generate message based on coaching style and urgency
+    final_response_text = get_coaching_message(
+        coaching_style=coaching_style,
+        urgency_level=urgency_level,
+        user_name=user_name,
+        status_line=status_line,
+        hours_remaining=hours_remaining,
+        incomplete_goals=incomplete_goals,
+        user_reason=user_reason,
+        completed=completed,
+        total=total
+    )
 
     # Store as pending reminder
     reminders = state.get("pending_reminders", [])
