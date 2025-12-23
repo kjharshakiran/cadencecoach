@@ -1414,6 +1414,20 @@ def get_or_create_session_id(user_id: str):
             "sleep_time": "22:00",
             "enable_push": True,
             "timezone": "America/New_York"  # Default timezone
+        },
+
+        # Gamification - Streaks & Personal Records
+        "streak": {
+            "current": 0,
+            "longest": 0,
+            "last_complete_date": None
+        },
+        "personal_records": {
+            "highest_steps": 0,
+            "highest_steps_date": None,
+            "longest_streak": 0,
+            "most_water_glasses": 0,
+            "perfect_days_total": 0
         }
     }
     new_session = session_service.create_session(
@@ -2333,6 +2347,43 @@ async def get_journey_status(request: Request):
         "weight_lost": weight_lost,
         "target_loss": target_loss,
         "progress_percent": progress_percent
+    }
+
+
+@app.get("/api/streak")
+async def get_streak_and_records(request: Request):
+    """Get current streak and personal records."""
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
+    state = session.state
+
+    streak = state.get("streak", {"current": 0, "longest": 0, "last_complete_date": None})
+    personal_records = state.get("personal_records", {
+        "highest_steps": 0, "highest_steps_date": None,
+        "longest_streak": 0, "most_water_glasses": 0, "perfect_days_total": 0
+    })
+
+    # Calculate if streak is at risk (less than 2 hours remaining and goals incomplete)
+    goals = state.get("daily_goals", [])
+    completed = sum(1 for g in goals if g.get("completed", False))
+    total = len(goals)
+
+    now = datetime.now()
+    hours_remaining = max(0, 22 - now.hour)  # Until 10 PM
+    streak_at_risk = (streak.get("current", 0) > 0 and
+                      completed < total and
+                      hours_remaining <= 2)
+
+    return {
+        "streak": streak,
+        "personal_records": personal_records,
+        "streak_at_risk": streak_at_risk,
+        "today_progress": {
+            "completed": completed,
+            "total": total,
+            "percentage": round(completed / total * 100) if total > 0 else 0
+        }
     }
 
 
@@ -3864,6 +3915,49 @@ async def _reset_user_daily(user_id: str, session_id: str, state: dict, timezone
         })
         state["daily_logs"] = daily_logs[-30:]  # Keep last 30 days
         logger.info(f"Archived {yesterday}: {completed_count}/{len(previous_goals)} goals, {yesterday_water} glasses water, {current_steps} steps")
+
+        # ═══════════════════════════════════════════════════════════════
+        # UPDATE STREAK & PERSONAL RECORDS
+        # ═══════════════════════════════════════════════════════════════
+        streak = state.get("streak", {"current": 0, "longest": 0, "last_complete_date": None})
+        personal_records = state.get("personal_records", {
+            "highest_steps": 0, "highest_steps_date": None,
+            "longest_streak": 0, "most_water_glasses": 0, "perfect_days_total": 0
+        })
+
+        # Check if yesterday was 100% completion
+        total_goals = len(previous_goals)
+        was_perfect_day = (completed_count == total_goals and total_goals > 0)
+
+        if was_perfect_day:
+            # Increment streak
+            streak["current"] = streak.get("current", 0) + 1
+            streak["last_complete_date"] = yesterday
+            personal_records["perfect_days_total"] = personal_records.get("perfect_days_total", 0) + 1
+
+            # Check for longest streak record
+            if streak["current"] > streak.get("longest", 0):
+                streak["longest"] = streak["current"]
+                personal_records["longest_streak"] = streak["current"]
+                logger.info(f"User {user_id}: NEW STREAK RECORD! {streak['current']} days")
+        else:
+            # Streak broken
+            if streak.get("current", 0) > 0:
+                logger.info(f"User {user_id}: Streak broken at {streak.get('current', 0)} days")
+            streak["current"] = 0
+
+        # Update personal records
+        if current_steps > personal_records.get("highest_steps", 0):
+            personal_records["highest_steps"] = current_steps
+            personal_records["highest_steps_date"] = yesterday
+            logger.info(f"User {user_id}: NEW STEP RECORD! {current_steps:,} steps")
+
+        if yesterday_water > personal_records.get("most_water_glasses", 0):
+            personal_records["most_water_glasses"] = yesterday_water
+            logger.info(f"User {user_id}: NEW WATER RECORD! {yesterday_water} glasses")
+
+        state["streak"] = streak
+        state["personal_records"] = personal_records
 
         # Send WhatsApp evening summary before resetting
         notification_settings = state.get("notification_settings", {})

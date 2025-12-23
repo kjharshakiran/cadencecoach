@@ -2093,10 +2093,36 @@
                 </div>
             </div>
 
-            <!-- Streak Calendar -->
+            <!-- Streak & Personal Records -->
             <div class="chart-card" style="margin-bottom: 20px;">
-                <h3>Daily Streak Calendar</h3>
-                <div id="streak-calendar" style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3>Streak & Records</h3>
+                    <span id="streak-at-risk" style="display: none; background: #ef4444; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; animation: pulse 1s infinite;">⚠️ STREAK AT RISK</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px;">
+                    <div style="background: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 1.5rem;">🔥</div>
+                        <div id="current-streak" style="font-size: 1.2rem; font-weight: bold; color: var(--accent-color);">0</div>
+                        <div style="font-size: 0.65rem; color: var(--text-muted);">Current Streak</div>
+                    </div>
+                    <div style="background: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 1.5rem;">🏆</div>
+                        <div id="longest-streak" style="font-size: 1.2rem; font-weight: bold; color: #f59e0b;">0</div>
+                        <div style="font-size: 0.65rem; color: var(--text-muted);">Best Streak</div>
+                    </div>
+                    <div style="background: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 1.5rem;">👟</div>
+                        <div id="highest-steps" style="font-size: 1.2rem; font-weight: bold; color: #22c55e;">0</div>
+                        <div style="font-size: 0.65rem; color: var(--text-muted);">Best Steps</div>
+                    </div>
+                    <div style="background: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 1.5rem;">⭐</div>
+                        <div id="perfect-days" style="font-size: 1.2rem; font-weight: bold; color: #8b5cf6;">0</div>
+                        <div style="font-size: 0.65rem; color: var(--text-muted);">Perfect Days</div>
+                    </div>
+                </div>
+                <h4 style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">Calendar</h4>
+                <div id="streak-calendar" style="display: flex; flex-wrap: wrap; gap: 4px;">
                     <!-- Calendar days will be populated here -->
                 </div>
                 <div style="display: flex; gap: 15px; margin-top: 15px; font-size: 0.75rem; color: var(--text-muted);">
@@ -2923,6 +2949,30 @@
                 day.onmouseout = () => day.style.transform = 'scale(1)';
 
                 calendar.appendChild(day);
+            }
+        }
+
+        async function loadStreakData() {
+            try {
+                const response = await fetch(`${API_URL}/streak`);
+                if (!response.ok) return;
+                const data = await response.json();
+
+                // Update streak display
+                document.getElementById('current-streak').textContent = data.streak?.current || 0;
+                document.getElementById('longest-streak').textContent = data.streak?.longest || 0;
+                document.getElementById('highest-steps').textContent = (data.personal_records?.highest_steps || 0).toLocaleString();
+                document.getElementById('perfect-days').textContent = data.personal_records?.perfect_days_total || 0;
+
+                // Show streak at risk warning
+                const riskBadge = document.getElementById('streak-at-risk');
+                if (data.streak_at_risk) {
+                    riskBadge.style.display = 'inline-block';
+                } else {
+                    riskBadge.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading streak data:', error);
             }
         }
 
@@ -4491,6 +4541,7 @@
             loadStepStatus();
             loadNotifications();
             updateUrgencyBanner();
+            loadStreakData();
         }
 
         // Initialize

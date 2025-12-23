@@ -1321,3 +1321,82 @@ For detailed deployment instructions, including prerequisites, manual deployment
 - **Database**: SQLite (Development) / Cloud SQL (Production)
 - **Build**: Google Cloud Build
 - **Registry**: Google Container Registry (GCR)
+
+---
+
+## Future Coaching Improvements (Roadmap)
+
+### Phase 1: Gamification (In Progress)
+
+#### Streak System
+- Track consecutive days of 100% goal completion
+- "Streak at risk" warnings when time running out
+- Streak recovery mechanics (e.g., "wellness days" don't break streak)
+
+#### Personal Records
+- Track all-time bests: highest steps, longest streak, fastest completion
+- Celebrate new PRs with special messages
+- Reference PRs in motivation: "You're 500 steps from beating your record!"
+
+### Phase 2: Adaptive Coaching
+
+#### Coaching Personality Modes
+- `drill_sergeant` (default): Aggressive, commanding
+- `supportive_mentor`: Encouraging, celebrates small wins
+- `data_analyst`: Facts-focused, minimal emotion
+- `auto`: Adapts based on user response patterns
+
+#### Burnout Detection
+- Detect: 3+ days low completion, Whoop RED recovery, sleep < 6h
+- Auto-switch to "Recovery Mode" with reduced goals
+- Softer messaging: "Rest is part of the journey"
+
+### Phase 3: Behavioral Science
+
+#### Implementation Intentions
+- Add "IF X, THEN Y" plans to daily schedule
+- Example: "IF I wake up, THEN first thing is ice face wash"
+
+#### Identity Reinforcement
+- Use identity language: "Spartans stay hydrated" vs "You should drink"
+- Reinforce identity after streaks: "You ARE a Spartan. This is WHO YOU ARE."
+
+#### Reframe Failures
+- Ask "What happened?" instead of just criticizing
+- Offer options: too many goals? Low energy? Something came up?
+
+### Phase 4: Advanced Features
+
+#### Weekly Retrospective
+- Sunday summary: wins, improvement areas, patterns
+- Set focus for next week based on data
+
+#### Warrior Rank System
+- Recruit (0-7 days) → Soldier (8-21) → Warrior (22-50) → Spartan (51-100) → Elite (101-200) → Legend (201+)
+- Rank-up celebrations
+
+#### Context-Aware Nudges
+- Weather integration: "Rainy? Perfect for indoor HIIT"
+- Time-pattern: "You're usually done by now. Everything okay?"
+- Energy-pattern: Send reminders at user's high-energy times
+
+### Phase 5: Integrations
+
+#### Outlook Calendar
+- Sync work calendar
+- Identify breaks for walks/stretches
+- Suggest movement during back-to-back meetings
+
+#### Apple Health (via Terra/Vital)
+- Third-party API for Apple Health data
+- Steps, workouts, sleep from Apple Watch
+
+---
+
+## Implementation Notes
+
+### Minimal Change Philosophy
+- Small, surgical changes
+- One feature at a time
+- Test thoroughly before adding more
+- Don't break working features
