@@ -1100,18 +1100,66 @@
         .mobile-sidebar-toggle {
             display: none;
             position: fixed;
-            bottom: 70px;
+            bottom: 80px;
             right: 16px;
-            background: var(--accent-color);
+            background: linear-gradient(135deg, var(--accent-color), #b91c1c);
             color: white;
-            border: none;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            font-size: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            width: auto;
+            height: auto;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
             cursor: pointer;
-            box-shadow: 0 4px 12px var(--accent-glow);
+            box-shadow: 0 4px 20px var(--accent-glow), 0 0 40px rgba(220, 38, 38, 0.3);
             z-index: 1000;
+            animation: pulse-toggle 2s ease-in-out infinite;
+        }
+
+        /* Badge for incomplete goals count */
+        .mobile-goals-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #22c55e;
+            color: white;
+            border-radius: 50%;
+            min-width: 24px;
+            height: 24px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border: 2px solid var(--card-bg);
+            padding: 0 4px;
+        }
+
+        .mobile-goals-badge.has-incomplete {
+            background: var(--accent-color);
+            animation: badge-pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes badge-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes pulse-toggle {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 4px 20px var(--accent-glow), 0 0 40px rgba(220, 38, 38, 0.3);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 6px 30px var(--accent-glow), 0 0 60px rgba(220, 38, 38, 0.4);
+            }
+        }
+
+        .mobile-sidebar-toggle:active {
+            transform: scale(0.95);
         }
 
         .chart-card {
@@ -2069,50 +2117,6 @@
             </div>
         </div>
 
-        <!-- Mobile Sidebar Toggle Button -->
-        <button class="mobile-sidebar-toggle" id="mobile-sidebar-toggle" onclick="toggleMobileSidebar()">📋</button>
-
-        <!-- Mobile Sidebar Overlay -->
-        <div id="mobile-sidebar-overlay"
-            style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1002; padding: 20px; overflow-y: auto;">
-            <div
-                style="max-width: 400px; margin: 0 auto; background: var(--card-bg); border-radius: 16px; padding: 16px; border: 1px solid var(--border-color);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                    <h3 style="margin: 0; font-size: 1rem; color: var(--text-color);">📋 Your Plan</h3>
-                    <button onclick="toggleMobileSidebar()"
-                        style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
-                </div>
-                <!-- Mobile Carousel Tabs -->
-                <div
-                    style="display: flex; gap: 4px; margin-bottom: 16px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 10px;">
-                    <button id="mobile-tab-checklist" onclick="switchMobileSidebarTab('checklist')"
-                        style="flex: 1; padding: 10px 8px; background: var(--accent-color); border: none; border-radius: 8px; color: white; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; text-transform: uppercase;">Checklist</button>
-                    <button id="mobile-tab-daily" onclick="switchMobileSidebarTab('daily')"
-                        style="flex: 1; padding: 10px 8px; background: transparent; border: none; border-radius: 8px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; text-transform: uppercase;">Daily</button>
-                    <button id="mobile-tab-master" onclick="switchMobileSidebarTab('master')"
-                        style="flex: 1; padding: 10px 8px; background: transparent; border: none; border-radius: 8px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; text-transform: uppercase;">Master</button>
-                </div>
-                <!-- Mobile Content Views -->
-                <div id="mobile-checklist-view" style="display: block;">
-                    <div id="mobile-goals-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
-                </div>
-                <div id="mobile-daily-view" style="display: none;">
-                    <div style="margin-bottom: 12px; text-align: right;">
-                        <button onclick="regenerateDailyPlan()"
-                            style="background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-family: 'JetBrains Mono', monospace;">
-                            Regenerate Plan
-                        </button>
-                    </div>
-                    <div id="mobile-daily-plan-content"
-                        style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.6;"></div>
-                </div>
-                <div id="mobile-master-view" style="display: none;">
-                    <div id="mobile-master-plan-content"
-                        style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.6;"></div>
-                </div>
-            </div>
-        </div>
-
         <!-- Dashboard -->
         <div id="dashboard-interface" class="section">
             <!-- Journey Progress Card -->
@@ -2826,6 +2830,53 @@
         </div>
     </div>
     </div> <!-- End main-container -->
+
+    <!-- Mobile Sidebar Toggle Button (outside main-container for proper z-index) -->
+    <button class="mobile-sidebar-toggle" id="mobile-sidebar-toggle" onclick="toggleMobileSidebar()">
+        📋 CHECKLIST
+        <span id="mobile-goals-badge" class="mobile-goals-badge" style="display: none;"></span>
+    </button>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="mobile-sidebar-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 1002; padding: 20px; overflow-y: auto;">
+        <div
+            style="max-width: 400px; margin: 0 auto; background: var(--card-bg); border-radius: 16px; padding: 16px; border: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="margin: 0; font-size: 1rem; color: var(--text-color);">📋 Your Plan</h3>
+                <button onclick="toggleMobileSidebar()"
+                    style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <!-- Mobile Carousel Tabs -->
+            <div
+                style="display: flex; gap: 4px; margin-bottom: 16px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 10px;">
+                <button id="mobile-tab-checklist" onclick="switchMobileSidebarTab('checklist')"
+                    style="flex: 1; padding: 10px 8px; background: var(--accent-color); border: none; border-radius: 8px; color: white; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; text-transform: uppercase;">Checklist</button>
+                <button id="mobile-tab-daily" onclick="switchMobileSidebarTab('daily')"
+                    style="flex: 1; padding: 10px 8px; background: transparent; border: none; border-radius: 8px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; text-transform: uppercase;">Daily</button>
+                <button id="mobile-tab-master" onclick="switchMobileSidebarTab('master')"
+                    style="flex: 1; padding: 10px 8px; background: transparent; border: none; border-radius: 8px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer; text-transform: uppercase;">Master</button>
+            </div>
+            <!-- Mobile Content Views -->
+            <div id="mobile-checklist-view" style="display: block;">
+                <div id="mobile-goals-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+            </div>
+            <div id="mobile-daily-view" style="display: none;">
+                <div style="margin-bottom: 12px; text-align: right;">
+                    <button onclick="regenerateDailyPlan()"
+                        style="background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-family: 'JetBrains Mono', monospace;">
+                        Regenerate Plan
+                    </button>
+                </div>
+                <div id="mobile-daily-plan-content"
+                    style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.6;"></div>
+            </div>
+            <div id="mobile-master-view" style="display: none;">
+                <div id="mobile-master-plan-content"
+                    style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.6;"></div>
+            </div>
+        </div>
+    </div>
 
     <script>
         // Use relative URL for API - works in both dev and production
@@ -3860,13 +3911,15 @@
                     const data = await response.json();
                     if (data.goals && data.goals.length > 0) {
                         container.innerHTML = data.goals.map(goal => `
-                            <div style="display: flex; align-items: center; gap: 10px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; cursor: pointer;" onclick="toggleMobileGoal('${goal.id}', ${goal.completed})">
-                                <div style="width: 20px; height: 20px; border-radius: 4px; border: 2px solid ${goal.completed ? 'var(--success-color)' : 'var(--text-muted)'}; background: ${goal.completed ? 'var(--success-color)' : 'transparent'}; display: flex; align-items: center; justify-content: center;">
+                            <div style="display: flex; align-items: center; gap: 10px; padding: 12px; background: ${goal.completed ? 'rgba(34, 197, 94, 0.1)' : 'rgba(0,0,0,0.2)'}; border: 1px solid ${goal.completed ? 'rgba(34, 197, 94, 0.3)' : 'var(--border-color)'}; border-radius: 8px; cursor: pointer;" onclick="toggleMobileGoal('${goal.id}', ${goal.completed})">
+                                <div style="width: 24px; height: 24px; border-radius: 6px; border: 2px solid ${goal.completed ? 'var(--success-color)' : 'var(--text-muted)'}; background: ${goal.completed ? 'var(--success-color)' : 'transparent'}; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px;">
                                     ${goal.completed ? '✓' : ''}
                                 </div>
-                                <span style="flex: 1; font-size: 0.85rem; color: ${goal.completed ? 'var(--text-muted)' : 'var(--text-color)'}; text-decoration: ${goal.completed ? 'line-through' : 'none'};">${goal.name}</span>
+                                <span style="flex: 1; font-size: 0.9rem; color: ${goal.completed ? 'var(--text-muted)' : 'var(--text-color)'}; text-decoration: ${goal.completed ? 'line-through' : 'none'};">${goal.name}</span>
                             </div>
                         `).join('');
+                        // Update the badge
+                        updateMobileGoalsBadge(data.completed_count, data.total_count);
                     } else {
                         container.innerHTML = '<p style="color: var(--text-muted); text-align: center;">No goals yet. Accept your Master Plan first!</p>';
                     }
@@ -4406,8 +4459,27 @@
                 });
 
                 updateGoalsProgress(data.completed_count, data.total_count);
+                updateMobileGoalsBadge(data.completed_count, data.total_count);
             } catch (error) {
                 console.error("Error loading daily goals:", error);
+            }
+        }
+
+        function updateMobileGoalsBadge(completed, total) {
+            const badge = document.getElementById('mobile-goals-badge');
+            if (!badge) return;
+
+            const remaining = total - completed;
+            if (remaining > 0) {
+                badge.textContent = remaining;
+                badge.style.display = 'flex';
+                badge.classList.add('has-incomplete');
+            } else if (total > 0) {
+                badge.textContent = '✓';
+                badge.style.display = 'flex';
+                badge.classList.remove('has-incomplete');
+            } else {
+                badge.style.display = 'none';
             }
         }
 
