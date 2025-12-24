@@ -2042,8 +2042,16 @@
 
                     <!-- Daily Plan View -->
                     <div id="daily-view" style="flex: 1; display: none; flex-direction: column; overflow-y: auto;">
+                        <div style="padding: 8px 12px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+                            <button onclick="regenerateDailyPlan()" id="regenerate-plan-btn"
+                                style="background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-family: 'JetBrains Mono', monospace;"
+                                onmouseover="this.style.borderColor='var(--accent-color)'; this.style.color='var(--accent-color)'"
+                                onmouseout="this.style.borderColor='var(--border-color)'; this.style.color='var(--text-muted)'">
+                                Regenerate Plan
+                            </button>
+                        </div>
                         <div id="daily-plan-content"
-                            style="font-size: 0.85rem; line-height: 1.6; color: var(--text-color);">
+                            style="font-size: 0.85rem; line-height: 1.6; color: var(--text-color); padding: 12px;">
                             <p style="color: var(--text-muted); text-align: center; margin-top: 20px;">Loading daily
                                 plan...</p>
                         </div>
@@ -2089,6 +2097,12 @@
                     <div id="mobile-goals-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
                 </div>
                 <div id="mobile-daily-view" style="display: none;">
+                    <div style="margin-bottom: 12px; text-align: right;">
+                        <button onclick="regenerateDailyPlan()"
+                            style="background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-family: 'JetBrains Mono', monospace;">
+                            Regenerate Plan
+                        </button>
+                    </div>
                     <div id="mobile-daily-plan-content"
                         style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.6;"></div>
                 </div>
@@ -3884,12 +3898,17 @@
                 if (response.ok) {
                     const data = await response.json();
                     if (data.plan_text) {
-                        content.innerHTML = formatPlanText(data.plan_text);
+                        const outdated = isPlanOutdated(data.date);
+                        if (outdated) {
+                            content.innerHTML = '<p style="text-align: center; color: var(--accent-color);">Plan is from ' + data.date + '.<br><br>Click "Regenerate Plan" to get today\'s plan.</p>';
+                        } else {
+                            content.innerHTML = formatPlanText(data.plan_text);
+                        }
                     } else {
-                        content.innerHTML = '<p style="text-align: center;">No daily plan yet.<br><br>Ask the coach: "What\'s my plan for today?"</p>';
+                        content.innerHTML = '<p style="text-align: center;">No daily plan yet.<br><br>Click "Regenerate Plan" or ask the coach: "What\'s my plan for today?"</p>';
                     }
                 } else {
-                    content.innerHTML = '<p style="text-align: center;">No daily plan yet.<br><br>Ask the coach: "What\'s my plan for today?"</p>';
+                    content.innerHTML = '<p style="text-align: center;">No daily plan yet.<br><br>Click "Regenerate Plan" or ask the coach: "What\'s my plan for today?"</p>';
                 }
             } catch (error) {
                 content.innerHTML = '<p style="text-align: center;">Error loading daily plan</p>';
@@ -3932,6 +3951,32 @@
                 .replace(/\n/g, '<br>');
         }
 
+        function getTodayDateString() {
+            return new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        }
+
+        function isPlanOutdated(planDate) {
+            if (!planDate) return true;
+            return planDate !== getTodayDateString();
+        }
+
+        function updateDailyPlanButton(isOutdated) {
+            const btn = document.getElementById('regenerate-plan-btn');
+            if (btn) {
+                if (isOutdated) {
+                    btn.textContent = '⚔️ Generate Today\'s Plan';
+                    btn.style.background = 'var(--accent-color)';
+                    btn.style.color = 'white';
+                    btn.style.borderColor = 'var(--accent-color)';
+                } else {
+                    btn.textContent = 'Regenerate Plan';
+                    btn.style.background = 'transparent';
+                    btn.style.color = 'var(--text-muted)';
+                    btn.style.borderColor = 'var(--border-color)';
+                }
+            }
+        }
+
         async function loadDailyPlan() {
             const content = document.getElementById('daily-plan-content');
             content.innerHTML = '<p style="color: var(--text-muted); text-align: center;">Loading daily plan...</p>';
@@ -3939,22 +3984,93 @@
             try {
                 const response = await fetch(`${API_URL}/daily-plan`);
                 if (!response.ok) {
-                    content.innerHTML = '<p style="color: var(--text-muted); text-align: center;">No daily plan yet.<br><br>Ask the coach: <em>"What\'s my plan for today?"</em></p>';
+                    updateDailyPlanButton(true);
+                    content.innerHTML = '<p style="color: var(--text-muted); text-align: center;">No daily plan yet.<br><br>Click <strong>"Generate Today\'s Plan"</strong> above or ask the coach: <em>"What\'s my plan for today?"</em></p>';
                     return;
                 }
                 const data = await response.json();
 
                 if (data.plan_text) {
+                    const outdated = isPlanOutdated(data.date);
+                    updateDailyPlanButton(outdated);
+
+                    if (outdated) {
+                        // Plan is from a previous day - auto-regenerate
+                        content.innerHTML = '<p style="color: var(--accent-color); text-align: center;">Plan is from ' + data.date + '.<br><br>Generating today\'s plan...</p>';
+                        regenerateDailyPlan();
+                        return;
+                    }
+
                     content.innerHTML = `
                         <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--accent-color); text-transform: uppercase; margin-bottom: 10px;">Today's Battle Plan - ${data.date}</div>
                         ${formatPlanText(data.plan_text)}
                     `;
                 } else {
-                    content.innerHTML = '<p style="color: var(--text-muted); text-align: center;">No daily plan yet.<br><br>Ask the coach: <em>"What\'s my plan for today?"</em></p>';
+                    updateDailyPlanButton(true);
+                    content.innerHTML = '<p style="color: var(--text-muted); text-align: center;">No daily plan yet.<br><br>Click <strong>"Generate Today\'s Plan"</strong> above or ask the coach: <em>"What\'s my plan for today?"</em></p>';
                 }
             } catch (error) {
                 console.error("Error loading daily plan:", error);
+                updateDailyPlanButton(true);
                 content.innerHTML = '<p style="color: var(--text-muted); text-align: center;">Ask the coach for your daily plan!</p>';
+            }
+        }
+
+        async function regenerateDailyPlan() {
+            const desktopContent = document.getElementById('daily-plan-content');
+            const mobileContent = document.getElementById('mobile-daily-plan-content');
+            const btn = document.getElementById('regenerate-plan-btn');
+
+            // Show loading state
+            const loadingMsg = '<p style="color: var(--accent-color); text-align: center;">Generating new daily plan...</p>';
+            desktopContent.innerHTML = loadingMsg;
+            if (mobileContent) mobileContent.innerHTML = loadingMsg;
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Generating...';
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/daily-plan/regenerate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to regenerate plan');
+                }
+
+                const data = await response.json();
+
+                if (data.plan_text) {
+                    const planHtml = `
+                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--accent-color); text-transform: uppercase; margin-bottom: 10px;">Today's Battle Plan - ${data.date}</div>
+                        ${formatPlanText(data.plan_text)}
+                    `;
+                    desktopContent.innerHTML = planHtml;
+                    if (mobileContent) mobileContent.innerHTML = planHtml;
+
+                    // Update button to show plan is current
+                    updateDailyPlanButton(false);
+
+                    // Refresh notifications schedule from new daily plan
+                    loadNotificationSchedule();
+                    loadNotifications();
+
+                    // Also add success message to chat
+                    addMessage("THE SPARTAN", "Your Daily Battle Plan has been generated! Check the Daily Plan tab for your schedule.");
+                }
+            } catch (error) {
+                console.error("Error regenerating daily plan:", error);
+                const errorMsg = `<p style="color: var(--accent-color); text-align: center;">Error: ${error.message}<br><br>Try again or ask the coach for help.</p>`;
+                desktopContent.innerHTML = errorMsg;
+                if (mobileContent) mobileContent.innerHTML = errorMsg;
+                updateDailyPlanButton(true); // Keep button active on error
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                }
             }
         }
 
@@ -4079,6 +4195,10 @@
                     await loadTodayMetrics();
                     await loadDailyPlan();
                     await loadMasterPlan();
+
+                    // Refresh notifications schedule from new daily plan
+                    loadNotificationSchedule();
+                    loadNotifications();
 
                     // Switch to Daily Plan tab in sidebar to show them the plan
                     switchSidebarTab('daily');

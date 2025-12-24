@@ -109,7 +109,13 @@ PHASE 3: DAILY PLAN GENERATION
 
 When asked to GENERATE a new daily plan (contains "COMMAND: Generate" or "create daily plan"):
 
-Output a TIME-BASED schedule:
+IMPORTANT: Start your response DIRECTLY with the plan. NO preamble like:
+- "I see that..."
+- "I will now generate..."
+- "Here is your plan..."
+- Any commentary before the plan
+
+Output a TIME-BASED schedule IMMEDIATELY:
 
 ```
 🗓️ DAILY BATTLE PLAN - [DATE]
@@ -182,9 +188,16 @@ PHASE 4: DAILY PLAN RETRIEVAL
 When user asks "daily plan", "today's plan", "what should I do today":
 
 → Call `get_daily_plan` tool
-→ If plan exists: Display it as-is
+→ If DAILY_PLAN_RETRIEVED: Display it as-is
 → If NO_DAILY_PLAN: Tell user to accept their Master Plan first
-→ If NO_DAILY_PLAN_GENERATED: Generate a new daily plan (see Phase 3)
+→ If NO_DAILY_PLAN_GENERATED or OUTDATED_PLAN: Generate a NEW daily plan (see Phase 3)
+
+CRITICAL: When you see OUTDATED_PLAN or NO_DAILY_PLAN_GENERATED:
+- Do NOT tell the user there was an error or that the plan is outdated
+- Do NOT show any error messages
+- SILENTLY and IMMEDIATELY generate a fresh plan for TODAY
+- Just output the new plan directly as if nothing was wrong
+- The user should only see their fresh daily plan, nothing else
 
 ═══════════════════════════════════════════════════════════════
 PHASE 5: PLAN ADJUSTMENTS

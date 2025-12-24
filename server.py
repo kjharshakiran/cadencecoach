@@ -2193,6 +2193,87 @@ async def get_daily_plan(request: Request):
 
     raise HTTPException(status_code=404, detail="No daily plan available. Ask the coach for today's plan!")
 
+@app.post("/api/daily-plan/regenerate")
+async def regenerate_daily_plan(request: Request):
+    """Force regenerate today's daily plan. Simply asks the coach to generate it."""
+    user_id = get_user_id(request)
+    session_id = get_or_create_session_id(user_id)
+    session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
+    state = dict(session.state)
+
+    if not state.get("plan_accepted"):
+        raise HTTPException(status_code=400, detail="Accept your Master Plan first before generating daily plans.")
+
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    # Ensure daily_plan dict exists
+    if not isinstance(state.get("daily_plan"), dict):
+        state["daily_plan"] = {}
+    state["daily_plan"]["date"] = today
+    state["daily_plan"]["generated_at"] = datetime.now().isoformat()
+
+    try:
+        # Get user info from profile
+        warrior_profile = state.get("warrior_profile", {})
+        user_name = warrior_profile.get("name") or state.get("user_name", "Warrior")
+
+        # Include timestamp to make each request unique, and user name for context
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        daily_plan_prompt = (
+            f"COMMAND: Generate DAILY BATTLE PLAN for {user_name} - {today}\n\n"
+            f"Generate a COMPLETE time-based schedule. Output ONLY the plan - no preamble, no commentary, no explanations.\n\n"
+            f"🗓️ DAILY BATTLE PLAN - {today}\n\n"
+            f"Include:\n"
+            f"- ⏰ 6:00 AM WAKE UP (ice wash, weight check, 2 glasses water)\n"
+            f"- ⏰ 7:00 AM WORKOUT with specific exercises, sets, reps\n"
+            f"- ⏰ 12:00 PM MEAL 1 with specific foods and portions\n"
+            f"- ⏰ 3:00 PM SNACK\n"
+            f"- ⏰ 6:00 PM MEAL 2 with specific foods and portions\n"
+            f"- ⏰ 8:00 PM EVENING ROUTINE (ABC drink, nuts, walk)\n"
+            f"- ⏰ 10:00 PM BEDTIME\n"
+            f"- 📊 DAILY TOTALS (calories, protein, water, steps)\n"
+            f"- ✅ CHECKLIST\n\n"
+            f"START DIRECTLY with '🗓️ DAILY BATTLE PLAN'. No other text before it."
+        )
+
+        content = types.Content(role="user", parts=[types.Part(text=daily_plan_prompt)])
+        daily_plan_text = ""
+
+        async for event in runner.run_async(
+            user_id=user_id,
+            session_id=session_id,
+            new_message=content
+        ):
+            if event.is_final_response():
+                if event.content and event.content.parts:
+                    response_parts = [p.text for p in event.content.parts if hasattr(p, 'text') and p.text]
+                    daily_plan_text = "".join(response_parts).strip()
+
+        if not daily_plan_text:
+            raise HTTPException(status_code=500, detail="Failed to generate daily plan. Please try again.")
+
+        # Save the new daily plan
+        state["daily_plan"]["plan_text"] = daily_plan_text
+
+        # Parse and store the schedule for smart reminders
+        daily_schedule = parse_daily_schedule(daily_plan_text)
+        state["daily_schedule"] = daily_schedule
+
+        force_update_state(session_id, state)
+        logger.info(f"Daily plan regenerated for {user_id} on {today}")
+
+        return {
+            "message": "Daily plan regenerated successfully!",
+            "date": today,
+            "plan_text": daily_plan_text
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error regenerating daily plan: {e}")
+        raise HTTPException(status_code=500, detail=f"Error generating plan: {str(e)}")
+
 @app.get("/api/master-plan")
 async def get_master_plan(request: Request):
     """Get the master transformation plan."""
@@ -4165,18 +4246,20 @@ async def _reset_user_daily(user_id: str, session_id: str, state: dict, timezone
         # Generate new daily plan for today
         try:
             daily_plan_prompt = (
-                f"Good morning! Today is {today}. "
-                f"Generate my COMPLETE DAILY BATTLE PLAN as a single unified schedule organized by TIME.\n\n"
-                f"INCLUDE ALL OF THE FOLLOWING IN ONE RESPONSE:\n"
-                f"1. 🌅 MORNING ROUTINE (wake up time, ice wash, weight check-in)\n"
-                f"2. 💪 TODAY'S WORKOUT with specific exercises, sets, reps, and timing\n"
-                f"3. 🍽️ ALL MEALS with specific foods, portions, and exact times\n"
-                f"4. 💧 WATER/HYDRATION checkpoints throughout the day\n"
-                f"5. 👟 STEP TARGETS and movement breaks\n"
-                f"6. ✅ DAILY GOALS CHECKLIST (vitamins, medicine, ABC drink, etc.)\n"
-                f"7. 🌙 EVENING ROUTINE\n\n"
-                f"Format as a TIME-BASED SCHEDULE from wake-up to bedtime.\n"
-                f"DO NOT delegate to sub-agents - provide the complete plan yourself."
+                f"COMMAND: Generate DAILY BATTLE PLAN - {today}\n\n"
+                f"Generate a COMPLETE time-based schedule. Output ONLY the plan - no preamble, no commentary.\n\n"
+                f"🗓️ DAILY BATTLE PLAN - {today}\n\n"
+                f"Include:\n"
+                f"- ⏰ 6:00 AM WAKE UP (ice wash, weight check, 2 glasses water)\n"
+                f"- ⏰ 7:00 AM WORKOUT with specific exercises, sets, reps\n"
+                f"- ⏰ 12:00 PM MEAL 1 with specific foods and portions\n"
+                f"- ⏰ 3:00 PM SNACK\n"
+                f"- ⏰ 6:00 PM MEAL 2 with specific foods and portions\n"
+                f"- ⏰ 8:00 PM EVENING ROUTINE (ABC drink, nuts, walk)\n"
+                f"- ⏰ 10:00 PM BEDTIME\n"
+                f"- 📊 DAILY TOTALS (calories, protein, water, steps)\n"
+                f"- ✅ CHECKLIST\n\n"
+                f"START DIRECTLY with '🗓️ DAILY BATTLE PLAN'. No other text before it."
             )
 
             content = types.Content(role="user", parts=[types.Part(text=daily_plan_prompt)])

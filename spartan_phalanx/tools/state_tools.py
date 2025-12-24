@@ -103,7 +103,8 @@ def get_daily_plan(tool_context: ToolContext) -> str:
 
     today = datetime.now().strftime("%Y-%m-%d")
     if plan_date != today:
-        return f"OUTDATED_PLAN: The stored daily plan is from {plan_date}, not today ({today}). A new plan should be generated via midnight reset."
+        # Return same format as NO_DAILY_PLAN_GENERATED to trigger auto-regeneration
+        return f"OUTDATED_PLAN: The stored daily plan is from {plan_date}, not today ({today}). Please generate the COMPLETE DAILY BATTLE PLAN now for {today}."
 
     return f"DAILY_PLAN_RETRIEVED:\n\n{plan_text}"
 
