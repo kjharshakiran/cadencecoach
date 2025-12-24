@@ -101,7 +101,16 @@ def get_daily_plan(tool_context: ToolContext) -> str:
             return "NO_DAILY_PLAN_GENERATED: Master Plan is accepted, but today's daily plan has not been generated yet. Please generate the COMPLETE DAILY BATTLE PLAN now."
         return "NO_DAILY_PLAN: No daily plan has been generated yet. The user needs to accept their Master Plan first."
 
-    today = datetime.now().strftime("%Y-%m-%d")
+    # Use user's timezone for date comparison
+    notification_settings = tool_context.state.get("notification_settings", {})
+    timezone_str = notification_settings.get("timezone", "America/New_York")
+    try:
+        from zoneinfo import ZoneInfo
+        user_time = datetime.now(ZoneInfo(timezone_str))
+    except Exception:
+        user_time = datetime.now()
+    today = user_time.strftime("%Y-%m-%d")
+
     if plan_date != today:
         # Return same format as NO_DAILY_PLAN_GENERATED to trigger auto-regeneration
         return f"OUTDATED_PLAN: The stored daily plan is from {plan_date}, not today ({today}). Please generate the COMPLETE DAILY BATTLE PLAN now for {today}."

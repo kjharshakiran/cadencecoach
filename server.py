@@ -1871,8 +1871,11 @@ async def accept_plan(request: Request):
     # Set plan as accepted
     state["plan_accepted"] = True
 
-    # Initialize daily goals from template (use DEFAULT_GOALS_TEMPLATE as fallback)
-    today = datetime.now().strftime("%Y-%m-%d")
+    # Use user's timezone for date calculation
+    notification_settings = state.get("notification_settings", {})
+    timezone_str = notification_settings.get("timezone", "America/New_York")
+    user_time = get_user_local_time(timezone_str)
+    today = user_time.strftime("%Y-%m-%d")
     goals_template = state.get("daily_goals_template") or DEFAULT_GOALS_TEMPLATE
     state["daily_goals"] = [
         {**goal, "completed": False, "current": 0, "date": today} if "target" in goal
@@ -2091,7 +2094,10 @@ async def save_metrics(request: Request, metrics_data: MetricsRequest):
     session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
-    today = datetime.now().strftime("%Y-%m-%d")
+    # Use user's timezone
+    notification_settings = state.get("notification_settings", {})
+    timezone_str = notification_settings.get("timezone", "America/New_York")
+    today = get_user_local_time(timezone_str).strftime("%Y-%m-%d")
 
     # Get or create today's metrics
     daily_metrics = state.get("daily_metrics", {})
@@ -2119,7 +2125,10 @@ async def get_today_metrics(request: Request):
     session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
-    today = datetime.now().strftime("%Y-%m-%d")
+    # Use user's timezone
+    notification_settings = state.get("notification_settings", {})
+    timezone_str = notification_settings.get("timezone", "America/New_York")
+    today = get_user_local_time(timezone_str).strftime("%Y-%m-%d")
     daily_metrics = state.get("daily_metrics", {})
     today_metrics = daily_metrics.get(today, {})
 
@@ -2204,7 +2213,11 @@ async def regenerate_daily_plan(request: Request):
     if not state.get("plan_accepted"):
         raise HTTPException(status_code=400, detail="Accept your Master Plan first before generating daily plans.")
 
-    today = datetime.now().strftime("%Y-%m-%d")
+    # Use user's timezone for date calculation
+    notification_settings = state.get("notification_settings", {})
+    timezone_str = notification_settings.get("timezone", "America/New_York")
+    user_time = get_user_local_time(timezone_str)
+    today = user_time.strftime("%Y-%m-%d")
 
     # Ensure daily_plan dict exists
     if not isinstance(state.get("daily_plan"), dict):
@@ -2523,7 +2536,10 @@ async def log_water(request: Request):
     session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
-    today = datetime.now().strftime("%Y-%m-%d")
+    # Use user's timezone
+    notification_settings = state.get("notification_settings", {})
+    timezone_str = notification_settings.get("timezone", "America/New_York")
+    today = get_user_local_time(timezone_str).strftime("%Y-%m-%d")
     water_intake = state.get("water_intake", {"date": "", "glasses": 0, "last_logged": None})
 
     # Reset if new day
@@ -2570,7 +2586,10 @@ async def get_water_status(request: Request):
     session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
-    today = datetime.now().strftime("%Y-%m-%d")
+    # Use user's timezone
+    notification_settings = state.get("notification_settings", {})
+    timezone_str = notification_settings.get("timezone", "America/New_York")
+    today = get_user_local_time(timezone_str).strftime("%Y-%m-%d")
     water_intake = state.get("water_intake", {"date": "", "glasses": 0, "last_logged": None})
 
     # Reset if new day
@@ -2622,7 +2641,10 @@ async def log_steps(request: Request, step_data: StepLogRequest):
     session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
-    today = datetime.now().strftime("%Y-%m-%d")
+    # Use user's timezone
+    notification_settings = state.get("notification_settings", {})
+    timezone_str = notification_settings.get("timezone", "America/New_York")
+    today = get_user_local_time(timezone_str).strftime("%Y-%m-%d")
     daily_metrics = state.get("daily_metrics", {})
 
     if today not in daily_metrics:
@@ -2678,7 +2700,10 @@ async def get_steps_status(request: Request):
     session = session_service.get_session(app_name=APP_NAME, user_id=user_id, session_id=session_id)
     state = session.state
 
-    today = datetime.now().strftime("%Y-%m-%d")
+    # Use user's timezone
+    notification_settings = state.get("notification_settings", {})
+    timezone_str = notification_settings.get("timezone", "America/New_York")
+    today = get_user_local_time(timezone_str).strftime("%Y-%m-%d")
     daily_metrics = state.get("daily_metrics", {})
     today_metrics = daily_metrics.get(today, {})
 
