@@ -1,7 +1,0 @@
-{
-  "status": "init",
-  "type": "backend",
-  "scope": "codebase",
-  "localEndpoint": "http://localhost:8000/",
-  "backendAuthType": "public"
-}
