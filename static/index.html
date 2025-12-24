@@ -2120,8 +2120,8 @@
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <h3>Journey Progress</h3>
                     <div style="display: flex; gap: 10px;">
-                        <button onclick="simulateJourney()"
-                            style="padding: 8px 12px; background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; cursor: pointer; text-transform: uppercase;">Simulate
+                        <button id="simulate-data-btn" onclick="simulateJourney()"
+                            style="display: none; padding: 8px 12px; background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; cursor: pointer; text-transform: uppercase;">Simulate
                             Data</button>
                         <button onclick="completeGoal()" id="complete-goal-btn"
                             style="padding: 8px 12px; background: linear-gradient(135deg, #22c55e, #16a34a); border: none; color: white; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; cursor: pointer; text-transform: uppercase;">Complete
@@ -4456,6 +4456,12 @@
                     }
 
                     userBar.style.display = 'flex';
+
+                    // Show simulate button only for admin user
+                    if (user.username === 'demo_user') {
+                        const simulateBtn = document.getElementById('simulate-data-btn');
+                        if (simulateBtn) simulateBtn.style.display = 'block';
+                    }
                 }
             } catch (error) {
                 console.error('Error loading user info:', error);
